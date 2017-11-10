@@ -1,0 +1,33 @@
+td.current-day, th.current-day {
+  background: #fffc00;
+}
+
+td.past-day {
+  background: #e3e3e3;
+  opacity: 0.9;
+}
+
+th.past-day {
+  opacity: 0.6;
+}
+
+.schedule tr td {
+  vertical-align: top;
+}
+
+span.task-execution {
+  display: block;
+
+  background: #d0f5ff;
+
+  margin: 0.3em 0;
+  padding: 0.2em;
+}
+
+span.task-execution.finished {
+  background: #a4ffa0;
+}
+
+span.task-execution.overdue {
+  background: #ffb0a4;
+}

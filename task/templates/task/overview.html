@@ -2,6 +2,12 @@
 
 {% load humanize %}
 {% load i18n %}
+{% load static %}
+{% load task %}
+
+{% block head %}
+  <link rel="stylesheet" type="text/css" href="{% static 'task/css/task.css' %}" />
+{% endblock head %}
 
 {% block content %}
   {% if unscheduled_tasks %}
@@ -18,4 +24,27 @@
       {% endfor %}
     </ul>
   {% endif %}
+
+  <table class="schedule table table-striped">
+    <tr>
+      {% for day in schedule_by_day.keys %}
+        <th{% if day|in_past %} class="past-day"{% elif day|is_today %} class="current-day"{% endif %}>
+          {{ day|naturalday }}
+        </th>
+      {% endfor %}
+    </tr>
+    <tr>
+      {% for day, day_executions in schedule_by_day.items %}
+        <td{% if day|in_past %} class="past-day"{% elif day|is_today %} class="current-day"{% endif %}>
+          {% for execution in day_executions %}
+            <span
+                class="task-execution {% if execution.finished %}finished{% elif execution.overdue %}overdue{% endif %}"
+                style="height: {{ execution.duration|multiply:10 }}em;">
+              <strong>{{ execution.task.name }}</strong>
+            </span>
+          {% endfor %}
+        </td>
+      {% endfor %}
+    </tr>
+  </table>
 {% endblock content %}
