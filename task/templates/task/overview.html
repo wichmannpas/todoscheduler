@@ -1,0 +1,21 @@
+{% extends 'base/base.html' %}
+
+{% load humanize %}
+{% load i18n %}
+
+{% block content %}
+  {% if unscheduled_tasks %}
+    <p>
+      {% trans 'Some tasks are not fully scheduled yet!' %}
+    </p>
+
+    <ul>
+      {% for task in unscheduled_tasks %}
+        <li>
+          {{ task.name }}
+          ({{ task.unscheduled_duration.normalize|intcomma }}h)
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock content %}
