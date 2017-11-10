@@ -7,12 +7,19 @@
     <title>WorkloadManager</title>
 
     <link rel="stylesheet" type="text/css" href="{% static 'base/css/spectre.min.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'base/css/font-awesome.min.css' %}" />
 
     {% block head %}
     {% endblock head %}
   </head>
   <body>
-    {% block content %}
-    {% endblock content %}
+    <div class="container">
+      {% for message in messages %}
+        <div class="toast toast-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+
+      {% block content %}
+      {% endblock content %}
+    </div>
   </body>
 </html>

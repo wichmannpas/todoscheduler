@@ -25,3 +25,8 @@ def is_today(value: Union[datetime, date]) -> bool:
 @register.filter
 def multiply(value, arg):
     return value * arg
+
+
+@register.filter
+def to_str(value) -> str:
+    return str(value)

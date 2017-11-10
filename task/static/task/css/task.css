@@ -1,5 +1,5 @@
 td.current-day, th.current-day {
-  background: #fffc00;
+  background: #fffeaf;
 }
 
 td.past-day {
@@ -18,6 +18,8 @@ th.past-day {
 span.task-execution {
   display: block;
 
+  min-height: 3.5em;
+
   background: #d0f5ff;
 
   margin: 0.3em 0;
@@ -30,4 +32,8 @@ span.task-execution.finished {
 
 span.task-execution.overdue {
   background: #ffb0a4;
+}
+
+.invisible {
+  visibility: hidden;
 }
