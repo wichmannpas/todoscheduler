@@ -60,4 +60,4 @@ target/
 
 .idea
 db.sqlite3
-workloadmanager/settings.py.example
+todoscheduler/settings.py
