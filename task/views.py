@@ -161,6 +161,17 @@ def schedule_task(
     schedule_for = form.cleaned_data.get('schedule_for')
     schedule_for_date = form.cleaned_data.get('schedule_for_date')
     with transaction.atomic():
+        scheduled_day = task.schedule(schedule_for, schedule_for_date, duration)
+        if not scheduled_day:
+            if schedule_for == 'next_free_capacity':
+                messages.warning(
+                    request,
+                    _('No capacity has been found in the near future.'))
+            else:
+                messages.warning(
+                    request,
+                    _('The chosen day has too less capacities.'))
+            return redirect('task:overview')
         if duration > task.unscheduled_duration:
             messages.warning(
                 request, _(
@@ -168,8 +179,9 @@ def schedule_task(
                     'The task duration is increaesd.'))
             task.estimated_duration += duration - task.unscheduled_duration
             task.save()
-        task.schedule(schedule_for, schedule_for_date, duration)
-        messages.success(request, _('The task was scheduled successfully.'))
+        messages.success(
+            request,
+            _('The task was scheduled successfully for %s.') % scheduled_day)
 
     return redirect('task:overview')
 

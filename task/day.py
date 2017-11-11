@@ -24,12 +24,15 @@ class Day:
         return self.day == today
 
     def is_weekday(self) -> bool:
-        print(self.day.weekday())
         return self.day.weekday() < 5
 
     @property
     def scheduled_duration(self) -> Decimal:
         return sum(execution.duration for execution in self.executions)
+
+    @property
+    def available_duration(self) -> Decimal:
+        return self.max_duration - self.scheduled_duration
 
     @property
     def max_duration(self) -> Decimal:

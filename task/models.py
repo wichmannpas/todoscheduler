@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Union
 
 from datetime import date, timedelta
 
@@ -26,7 +26,7 @@ class Task(models.Model):
 
     def schedule(self,
                  schedule_for: str, schedule_for_date: date,
-                 duration: Decimal) -> bool:
+                 duration: Decimal) -> Union[None, date]:
         """
         Schedule execution of this task.
         Returns whether the chosen day had enough capacities.
@@ -36,7 +36,21 @@ class Task(models.Model):
         elif schedule_for == 'tomorrow':
             day = date.today() + timedelta(days=1)
         elif schedule_for == 'next_free_capacity':
-            raise NotImplementedError
+            if (duration > self.user.workhours_weekday and
+                        duration > self.user.workhours_weekend):
+                # does not fit in a single day
+                return None
+            day = None
+            today = date.today()
+            # TODO: aggregate this in the database!
+            for offset in range(90):
+                cur_day = today + timedelta(days=offset)
+                print(cur_day, Task.free_capacity(self.user, cur_day))
+                if Task.free_capacity(self.user, cur_day) >= duration:
+                    day = cur_day
+                    break
+            if day is None:
+                return None
         elif schedule_for == 'another_time':
             day = schedule_for_date
         else:
@@ -51,7 +65,7 @@ class Task(models.Model):
             day_order=day_order,
             duration=duration)
         # TODO: check day capacity
-        return True
+        return day
 
     @property
     def unscheduled_duration(self):
@@ -72,6 +86,15 @@ class Task(models.Model):
             unscheduled_duration_agg=F(
                 'estimated_duration') - F('scheduled_duration')
         ).filter(unscheduled_duration_agg__gt=0)
+
+    @staticmethod
+    def free_capacity(user: get_user_model(), day: date) -> Decimal:
+        """Get the free capacity of a day."""
+        executions = TaskExecution.objects.filter(
+            task__user=user, day=day)
+        day = Day(user, day)
+        day.executions = list(executions)
+        return day.available_duration
 
 
 class TaskExecution(models.Model):
