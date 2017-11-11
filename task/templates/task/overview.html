@@ -73,7 +73,7 @@
                   </a>
                 {% else %}
                   <a href="{% url 'task:finish_task_execution' execution.pk 'yes' %}"
-                     class="tooltip" data-tooltip="{% trans 'Undo' %}">
+                     class="tooltip" data-tooltip="{% trans 'Done' %}">
                     <span class="fa fa-check"></span>
                   </a>
                 {% endif %}
