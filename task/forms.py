@@ -1,3 +1,5 @@
+from datetime import date
+
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
@@ -13,6 +15,8 @@ class ScheduleForm(forms.Form):
         ('next_free_capacity', _('Next Free Capacity')),
         ('another_time', _('Another Time')),
     ))
+    schedule_for_date = forms.DateField(
+        label=_('Schedule for date'), initial=date.today)
     duration = forms.DecimalField(
         label=_('Duration'),
         max_digits=4, decimal_places=2)

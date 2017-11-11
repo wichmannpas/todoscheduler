@@ -159,6 +159,7 @@ def schedule_task(
         pk=form.cleaned_data.get('task_id'))
     duration = form.cleaned_data.get('duration')
     schedule_for = form.cleaned_data.get('schedule_for')
+    schedule_for_date = form.cleaned_data.get('schedule_for_date')
     with transaction.atomic():
         if duration > task.unscheduled_duration:
             messages.warning(
@@ -167,7 +168,7 @@ def schedule_task(
                     'The task duration is increaesd.'))
             task.estimated_duration += duration - task.unscheduled_duration
             task.save()
-        task.schedule(schedule_for, duration)
+        task.schedule(schedule_for, schedule_for_date, duration)
         messages.success(request, _('The task was scheduled successfully.'))
 
     return redirect('task:overview')

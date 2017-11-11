@@ -24,7 +24,9 @@ class Task(models.Model):
     def __str__(self) -> str:
         return '{}: {}'.format(self.user, self.name)
 
-    def schedule(self, schedule_for: str, duration: Decimal) -> bool:
+    def schedule(self,
+                 schedule_for: str, schedule_for_date: date,
+                 duration: Decimal) -> bool:
         """
         Schedule execution of this task.
         Returns whether the chosen day had enough capacities.
@@ -36,7 +38,7 @@ class Task(models.Model):
         elif schedule_for == 'next_free_capacity':
             raise NotImplementedError
         elif schedule_for == 'another_time':
-            raise NotImplementedError
+            day = schedule_for_date
         else:
             raise ValueError('unknown schedule_for value: %s' % schedule_for)
 

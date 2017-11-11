@@ -37,11 +37,22 @@
     durationInput.val(task.data('unscheduled-duration'));
 
     $('#schedule').addClass('active');
+    $('#schedule_for').val('today');
+    $('#schedule_for_date').hide();
     durationInput.focus();
   }
 
   $(function () {
     $('#new_task_link').click(initNewTask);
+    let scheduleFor = $('#schedule_for');
+    scheduleFor.change(function () {
+      let scheduleForDate = $('#schedule_for_date');
+      if (scheduleFor.val() === 'another_time') {
+        scheduleForDate.show();
+      } else {
+        scheduleForDate.hide();
+      }
+    });
     $('.task-schedule').click(initSchedule);
     $('.modal-close').click(closeModals);
     $('.modal-overlay').click(closeModals);
