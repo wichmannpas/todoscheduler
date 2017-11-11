@@ -1,5 +1,5 @@
 """
-WSGI config for workloadmanager project.
+WSGI config for todoscheduler project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "workloadmanager.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "todoscheduler.settings")
 
 application = get_wsgi_application()
