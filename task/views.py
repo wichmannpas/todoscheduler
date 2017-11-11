@@ -61,8 +61,12 @@ def delete_task_execution(
         TaskExecution.objects.filter(task__user=request.user).select_related('task'),
         pk=task_execution_pk)
     with transaction.atomic():
-        if task_execution.duration == task_execution.task.estimated_duration:
-            task_execution.task.delete()
+        task = task_execution.task
+        task.estimated_duration -= task_execution.duration
+        if task.estimated_duration <= 0:
+            task.delete()
+        else:
+            task.save(update_fields=('estimated_duration',))
         task_execution.delete()
         messages.success(request, _('The task execution has been deleted successfully.'))
     return redirect('task:overview')
