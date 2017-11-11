@@ -15,8 +15,7 @@
         <div class="content">
           {% csrf_token %}
 
-          <input id="new_task_name" name="name"
-                 type="text" class="form-input" placeholder="{% trans 'Task Name' %}">
+          {% render_field task_form.name class+='form-input' class+='align-right' placeholder=task_form.name.label %}
 
           <div class="input-group">
             {% render_field task_form.estimated_duration class+='form-input' class+='align-right' placeholder=task_form.estimated_duration.label %}

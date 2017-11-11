@@ -1,5 +1,11 @@
 (function () {
   /**
+   * Close all modals.
+   */
+  function closeModals() {
+    $('.modal').removeClass('active');
+  }
+  /**
    * Initialize and display the new task modal.
    */
   function initNewTask(event) {
@@ -16,8 +22,7 @@
 
   $(function () {
     $('#new_task_link').click(initNewTask);
-    $('.modal-close').click(function () {
-      $('.modal').removeClass('active');
-    });
+    $('.modal-close').click(closeModals);
+    $('.modal-overlay').click(closeModals);
   });
 })();
