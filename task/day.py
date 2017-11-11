@@ -28,7 +28,7 @@ class Day:
 
     @property
     def scheduled_duration(self) -> Decimal:
-        return sum(execution.duration for execution in self.executions)
+        return Decimal(sum(execution.duration for execution in self.executions))
 
     @property
     def available_duration(self) -> Decimal:

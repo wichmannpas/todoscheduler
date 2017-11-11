@@ -74,7 +74,7 @@ class Task(models.Model):
             return self.unscheduled_duration_agg
         return (
             self.estimated_duration -
-            (self.executions.aggregate(Sum('duration'))['duration__sum'] or 0))
+            (self.executions.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)))
 
     @staticmethod
     def unscheduled_tasks(user: get_user_model()):
