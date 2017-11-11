@@ -10,6 +10,8 @@ from django.db import models
 from django.db.models import Sum, F, Max
 from django.db.models.functions import Coalesce
 
+from .day import Day
+
 
 class Task(models.Model):
     """A task is a single job to do."""
@@ -95,7 +97,7 @@ class TaskExecution(models.Model):
     @staticmethod
     def schedule_by_day(
             user: get_user_model(),
-            first_day: date, days: int) -> Dict[date, List['TaskExecution']]:
+            first_day: date, days: int) -> List[Day]:
         """Get an overview of the schedule."""
         last_day = first_day + timedelta(days)
         executions = TaskExecution.objects.filter(task__user=user).filter(
@@ -106,8 +108,8 @@ class TaskExecution(models.Model):
         day = first_day
         # ensure that all days (even those without execution) are in the dictionary
         while day <= last_day:
-            by_day[day] = []
+            by_day[day] = Day(user, day)
             day += timedelta(days=1)
         for execution in executions:
-            by_day[execution.day].append(execution)
-        return by_day
+            by_day[execution.day].executions.append(execution)
+        return by_day.values()
