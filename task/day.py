@@ -1,5 +1,7 @@
 from datetime import date
 
+from decimal import Decimal
+
 
 class Day:
     """A day class for advanced day functionality."""
@@ -20,3 +22,17 @@ class Day:
     def is_today(self) -> bool:
         today = date.today()
         return self.day == today
+
+    def is_weekday(self) -> bool:
+        print(self.day.weekday())
+        return self.day.weekday() < 5
+
+    @property
+    def scheduled_duration(self) -> Decimal:
+        return sum(execution.duration for execution in self.executions)
+
+    @property
+    def max_duration(self) -> Decimal:
+        if self.is_weekday():
+            return self.user.workhours_weekday
+        return self.user.workhours_weekend

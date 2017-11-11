@@ -45,6 +45,7 @@
       {% for day in schedule_by_day %}
         <th{% if day.in_past %} class="past-day"{% elif day.is_today %} class="current-day"{% endif %}>
           {{ day.day|naturalday }}
+          ({{ day.scheduled_duration.normalize|intcomma }}h/{{ day.max_duration.normalize|intcomma }}h)
         </th>
       {% endfor %}
     </tr>
