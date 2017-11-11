@@ -11,6 +11,10 @@ th.past-day {
   opacity: 0.6;
 }
 
+th.overloaded-day {
+  background: #ffa195 !important;
+}
+
 .schedule tr td {
   vertical-align: top;
 }
