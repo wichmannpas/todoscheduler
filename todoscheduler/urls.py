@@ -15,11 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-from django.contrib.auth import views as auth_views
+from registration.backends.hmac.views import RegistrationView
+
+from base.forms import UserForm
 
 urlpatterns = [
-    url(r'^accounts/login/',
-        auth_views.LoginView.as_view(template_name='account/login.html')),
+    url(r'^accounts/register/$', RegistrationView.as_view(form_class=UserForm)),
+    url(r'^accounts/', include('registration.backends.hmac.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^', include('task.urls')),
 ]
