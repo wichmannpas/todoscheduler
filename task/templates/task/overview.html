@@ -26,9 +26,15 @@
 
     <ul>
       {% for task in unscheduled_tasks %}
-        <li>
+        <li
+            data-name="{{ task.name }}"
+            data-taskid="{{ task.pk }}"
+            data-unscheduled-duration="{{ task.unscheduled_duration.normalize|intcomma }}">
           {{ task.name }}
           ({{ task.unscheduled_duration.normalize|intcomma }}h)
+          <a href="#" class="task-schedule">
+            {% trans 'Schedule' %}
+          </a>
         </li>
       {% endfor %}
     </ul>
@@ -48,7 +54,7 @@
           {% for execution in day_executions %}
             <span
                 class="task-execution {% if execution.finished %}finished{% elif execution.overdue %}overdue{% endif %}"
-                style="height: {{ execution.duration|multiply:10|to_str }}em;">
+                style="height: {{ execution.duration|multiply:4|to_str }}em;">
               <strong>{{ execution.task.name }}</strong>
               <span class="float-right">
                 {{ execution.duration.normalize|intcomma }}h
@@ -113,4 +119,5 @@
   </table>
 
   {% include 'task/new_task.html' %}
+  {% include 'task/schedule.html' %}
 {% endblock content %}

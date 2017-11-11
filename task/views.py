@@ -11,7 +11,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.http import require_POST
 
-from .forms import TaskForm
+from .forms import TaskForm, ScheduleForm
 from .models import Task, TaskExecution
 
 
@@ -24,6 +24,7 @@ def create_task(
     if not form.is_valid():
         messages.warning(
             request, _('The task is invalid'))
+        return redirect('task:overview')
     form.instance.user = request.user
     form.save()
     messages.success(
@@ -133,10 +134,38 @@ def postpone_task_execution(
 def reserve_task_time(
         request: HttpRequest,
         task_pk: int, seconds: int) -> HttpResponse:
-    """Reserve time for future scheduling."""
     task = get_object_or_404(request.user.tasks, pk=task_pk)
-    task.estimated_duration = F('estimated_duration') +  Decimal(seconds) / 3600
+    task.estimated_duration = F('estimated_duration') + Decimal(seconds) / 3600
     task.save(update_fields=('estimated_duration',))
+    return redirect('task:overview')
+
+
+@require_POST
+@login_required
+def schedule_task(
+        request: HttpRequest) -> HttpResponse:
+    """Reserve time for future scheduling."""
+    form = ScheduleForm(request.POST)
+    if not form.is_valid():
+        messages.warning(request, _('Schedule is invalid.'))
+        return redirect('task:overview')
+
+    task = get_object_or_404(
+        request.user.tasks,
+        pk=form.cleaned_data.get('task_id'))
+    duration = form.cleaned_data.get('duration')
+    schedule_for = form.cleaned_data.get('schedule_for')
+    with transaction.atomic():
+        if duration > task.unscheduled_duration:
+            messages.warning(
+                request, _(
+                    'The scheduled duration is greater than the unscheduled task duration. '
+                    'The task duration is increaesd.'))
+            task.estimated_duration += duration - task.unscheduled_duration
+            task.save()
+        task.schedule(schedule_for, duration)
+        messages.success(request, _('The task was scheduled successfully.'))
+
     return redirect('task:overview')
 
 
@@ -144,6 +173,7 @@ def reserve_task_time(
 def overview(request: HttpRequest) -> HttpResponse:
     """Overview."""
     return render(request, 'task/overview.html', {
+        'schedule_form': ScheduleForm(),
         'schedule_by_day': TaskExecution.schedule_by_day(
             request.user, date.today() - timedelta(days=1), 4),
         'task_form': TaskForm(),

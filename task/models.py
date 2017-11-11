@@ -3,10 +3,11 @@ from typing import List, Dict
 from datetime import date, timedelta
 
 from collections import OrderedDict
+from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Max
 from django.db.models.functions import Coalesce
 
 
@@ -21,6 +22,33 @@ class Task(models.Model):
     def __str__(self) -> str:
         return '{}: {}'.format(self.user, self.name)
 
+    def schedule(self, schedule_for: str, duration: Decimal) -> bool:
+        """
+        Schedule execution of this task.
+        Returns whether the chosen day had enough capacities.
+        """
+        if schedule_for == 'today':
+            day = date.today()
+        elif schedule_for == 'tomorrow':
+            day = date.today() + timedelta(days=1)
+        elif schedule_for == 'next_free_capacity':
+            raise NotImplementedError
+        elif schedule_for == 'another_time':
+            raise NotImplementedError
+        else:
+            raise ValueError('unknown schedule_for value: %s' % schedule_for)
+
+        day_order = (TaskExecution.objects.filter(
+            task__user=self.user,
+            day=day).aggregate(Max('day_order'))['day_order__max'] or 0) + 1
+        TaskExecution.objects.create(
+            task=self,
+            day=day,
+            day_order=day_order,
+            duration=duration)
+        # TODO: check day capacity
+        return True
+
     @property
     def unscheduled_duration(self):
         """Get the duration of this task which is not yet scheduled."""
@@ -28,7 +56,7 @@ class Task(models.Model):
             return self.unscheduled_duration_agg
         return (
             self.estimated_duration -
-            self.executions.aggregate(Sum('duration'))['duration__sum'] or 0)
+            (self.executions.aggregate(Sum('duration'))['duration__sum'] or 0))
 
     @staticmethod
     def unscheduled_tasks(user: get_user_model()):

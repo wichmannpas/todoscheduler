@@ -5,6 +5,7 @@
   function closeModals() {
     $('.modal').removeClass('active');
   }
+
   /**
    * Initialize and display the new task modal.
    */
@@ -20,8 +21,28 @@
     name.focus();
   }
 
+  /**
+   * Initialize and display the schedule modal.
+   */
+  function initSchedule(event) {
+    if (event !== undefined) {
+      event.preventDefault();
+    }
+    let task = $(this).parent();
+    let durationInput = $('#schedule_duration');
+
+    $('#schedule_data_name').text(task.data('name'));
+    $('#schedule_data_unscheduled_duration').text(task.data('unscheduled-duration'));
+    $('#schedule_id').val(task.data('taskid'));
+    durationInput.val(task.data('unscheduled-duration'));
+
+    $('#schedule').addClass('active');
+    durationInput.focus();
+  }
+
   $(function () {
     $('#new_task_link').click(initNewTask);
+    $('.task-schedule').click(initSchedule);
     $('.modal-close').click(closeModals);
     $('.modal-overlay').click(closeModals);
   });

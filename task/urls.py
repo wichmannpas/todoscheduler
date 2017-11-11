@@ -19,4 +19,6 @@ urlpatterns = [
         views.reserve_task_time, name='reserve_task_time'),
     url(r'^task/create/$',
         views.create_task, name='create_task'),
+    url(r'^task/schedule/$',
+        views.schedule_task, name='schedule_task'),
 ]
