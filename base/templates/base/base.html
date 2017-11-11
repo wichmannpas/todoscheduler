@@ -9,8 +9,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'base/css/spectre.min.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'base/css/font-awesome.min.css' %}" />
 
-    {% block head %}
-    {% endblock head %}
+    {% block head %}{% endblock head %}
   </head>
   <body>
     <div class="container">
@@ -18,8 +17,10 @@
         <div class="toast toast-{{ message.tags }}">{{ message }}</div>
       {% endfor %}
 
-      {% block content %}
-      {% endblock content %}
+      {% block content %}{% endblock content %}
     </div>
+
+    <script type="text/javascript" src="{% static 'base/js/jquery.min.js' %}"></script>
+    {% block additional_js %}{% endblock additional_js %}
   </body>
 </html>

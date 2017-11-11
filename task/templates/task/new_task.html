@@ -1,0 +1,35 @@
+{% load i18n %}
+{% load widget_tweaks %}
+
+<div id="new_task" class="modal modal-sm">
+  <div class="modal-overlay"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <button class="btn btn-clear float-right modal-close"></button>
+      <div class="modal-title h5">
+        {% trans 'New Task' %}
+      </div>
+    </div>
+    <div class="modal-body">
+      <form action="{% url 'task:create_task' %}" method="POST">
+        <div class="content">
+          {% csrf_token %}
+
+          <input id="new_task_name" name="name"
+                 type="text" class="form-input" placeholder="{% trans 'Task Name' %}">
+
+          <div class="input-group">
+            {% render_field task_form.estimated_duration class+='form-input' class+='align-right' placeholder=task_form.estimated_duration.label %}
+            <span class="input-group-addon">h</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <input type="submit" class="btn btn-primary" value="{% trans 'Create Task' %}" />
+        <button type="reset" class="btn btn-link modal-close">
+          {% trans 'Cancel' %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

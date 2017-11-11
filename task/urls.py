@@ -17,4 +17,6 @@ urlpatterns = [
         views.postpone_task_execution, name='postpone_task_execution'),
     url(r'^task/(?P<task_pk>\d+)/reserve/(?P<seconds>\d+)/$',
         views.reserve_task_time, name='reserve_task_time'),
+    url(r'^task/create/$',
+        views.create_task, name='create_task'),
 ]

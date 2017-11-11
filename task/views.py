@@ -9,9 +9,26 @@ from django.db.models import F
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.translation import ugettext_lazy as _
+from django.views.decorators.http import require_POST
 
+from .forms import TaskForm
 from .models import Task, TaskExecution
 
+
+@require_POST
+@login_required
+def create_task(
+        request: HttpRequest) -> HttpResponse:
+    """Create a new task."""
+    form = TaskForm(request.POST)
+    if not form.is_valid():
+        messages.warning(
+            request, _('The task is invalid'))
+    form.instance.user = request.user
+    form.save()
+    messages.success(
+        request, _('The task "%s" was created successfully.') % (form.instance.name,))
+    return redirect('task:overview')
 
 # TODO (security): This should use POST!
 @login_required
@@ -127,7 +144,8 @@ def reserve_task_time(
 def overview(request: HttpRequest) -> HttpResponse:
     """Overview."""
     return render(request, 'task/overview.html', {
-        'unscheduled_tasks': Task.unscheduled_tasks(request.user),
         'schedule_by_day': TaskExecution.schedule_by_day(
             request.user, date.today() - timedelta(days=1), 4),
+        'task_form': TaskForm(),
+        'unscheduled_tasks': Task.unscheduled_tasks(request.user),
     })

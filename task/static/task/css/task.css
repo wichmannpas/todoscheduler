@@ -37,3 +37,7 @@ span.task-execution.overdue {
 .invisible {
   visibility: hidden;
 }
+
+.align-right {
+  text-align: right;
+}

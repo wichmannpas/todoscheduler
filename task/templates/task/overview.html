@@ -8,8 +8,17 @@
 {% block head %}
   <link rel="stylesheet" type="text/css" href="{% static 'task/css/task.css' %}" />
 {% endblock head %}
+{% block additional_js %}
+  <script type="text/javascript" src="{% static 'task/js/task.js' %}"></script>
+{% endblock additional_js %}
 
 {% block content %}
+  <p>
+    <a id="new_task_link" href="#">
+      {% trans 'Create new task' %}
+    </a>
+  </p>
+
   {% if unscheduled_tasks %}
     <p>
       {% trans 'Some tasks are not fully scheduled yet!' %}
@@ -102,4 +111,6 @@
       {% endfor %}
     </tr>
   </table>
+
+  {% include 'task/new_task.html' %}
 {% endblock content %}
