@@ -82,7 +82,7 @@ class Task(models.Model):
         return user.tasks.annotate(
             scheduled_duration=Coalesce(
                 Sum('executions__duration'),
-                0),
+                0)).annotate(
             unscheduled_duration_agg=F(
                 'estimated_duration') - F('scheduled_duration')
         ).filter(unscheduled_duration_agg__gt=0)
