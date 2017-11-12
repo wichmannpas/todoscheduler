@@ -1,4 +1,3 @@
-import os
 from .settings_base import *  # NOQA
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -12,8 +11,11 @@ SECRET_KEY = 's@60r((v#^=_d*(q09x6(oi!#bh3!9*iwet94m(s0$v$i#h1v)'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),  # NOQA: F405
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'HOST': 'localhost',
+        'NAME': 'todoscheduler',
+        'USER': 'todoscheduler',
+        'PASSWORD': 'todoscheduler',
     }
 }
 
