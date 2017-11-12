@@ -11,6 +11,7 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install flake8
+  - pip install codecov
 
 before_script:
   - cp todoscheduler/settings.py.example todoscheduler/settings.py
@@ -19,4 +20,7 @@ before_script:
 
 script:
   - flake8
-  - python manage.py test
+  - coverage run manage.py test
+
+after_success:
+  - codecov
