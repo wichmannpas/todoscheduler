@@ -22,6 +22,7 @@ from base.forms import UserForm
 urlpatterns = [
     url(r'^accounts/register/$', RegistrationView.as_view(form_class=UserForm)),
     url(r'^accounts/', include('registration.backends.hmac.urls')),
+    url(r'^base/', include('base.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^', include('task.urls')),
 ]

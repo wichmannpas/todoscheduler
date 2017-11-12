@@ -31,3 +31,9 @@ EMAIL_PORT = 25
 # MAIL_HOST_PASSWORD = 'foobar123'
 # EMAIL_USE_TLS = True
 # EMAIL_USE_SSL = False
+
+USE_IMPRINT = True
+IMPRINT_ADDRESS = '''John Doe
+Foostreet 42
+12345 City
+Foobarcountry'''
