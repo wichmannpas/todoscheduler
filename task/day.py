@@ -11,10 +11,10 @@ class Day:
         self.executions = []
 
     def __eq__(self, other):
-        return self.day == other.day
+        return self.user == other.user and self.day == other.day
 
     def __hash__(self):
-        return hash(self.day)
+        return hash(self.day) ^ hash(self.user)
 
     def in_past(self) -> bool:
         return self.day < date.today()
