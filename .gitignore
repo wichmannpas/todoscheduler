@@ -20,6 +20,7 @@ lib/
 lib64/
 parts/
 sdist/
+_static
 var/
 *.egg-info/
 .installed.cfg
@@ -57,6 +58,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+node_modules
+package-lock.json
 
 # unicode
 categories.json
