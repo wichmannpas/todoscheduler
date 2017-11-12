@@ -37,7 +37,7 @@ class Task(models.Model):
             day = date.today() + timedelta(days=1)
         elif schedule_for == 'next_free_capacity':
             if (duration > self.user.workhours_weekday and
-                        duration > self.user.workhours_weekend):
+                    duration > self.user.workhours_weekend):
                 # does not fit in a single day
                 return None
             day = None

@@ -1,6 +1,3 @@
-from datetime import datetime, date
-from typing import Union
-
 from django import template
 
 

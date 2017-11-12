@@ -31,6 +31,7 @@ def create_task(
         request, _('The task "%s" was created successfully.') % (form.instance.name,))
     return redirect('task:overview')
 
+
 # TODO (security): This should use POST!
 @login_required
 def change_task_execution_duration(

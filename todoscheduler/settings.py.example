@@ -1,4 +1,5 @@
-from .settings_base import *
+import os
+from .settings_base import *  # NOQA
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -12,10 +13,19 @@ SECRET_KEY = 's@60r((v#^=_d*(q09x6(oi!#bh3!9*iwet94m(s0$v$i#h1v)'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),  # NOQA: F405
     }
 }
 
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Europe/Berlin'
+
+# Email configuration
+DEFAULT_FROM_EMAIL = 'TodoScheduler <noreply@todoscheduler>'
+EMAIL_HOST = '127.0.0.1'
+EMAIL_PORT = 25
+# EMAIL_HOST_USER = 'foobar123'
+# MAIL_HOST_PASSWORD = 'foobar123'
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False

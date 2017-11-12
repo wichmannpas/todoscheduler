@@ -13,7 +13,7 @@ class TaskAdmin(admin.ModelAdmin):
 
 
 @admin.register(TaskExecution)
-class TaskAdmin(admin.ModelAdmin):
+class TaskExecutionAdmin(admin.ModelAdmin):
     list_display = (
         'day',
         'duration',

@@ -10,11 +10,11 @@ class ScheduleForm(forms.Form):
     schedule_for = forms.ChoiceField(
         label=_('Schedule for'),
         choices=(
-        ('today', _('Today')),
-        ('tomorrow', _('Tomorrow')),
-        ('next_free_capacity', _('Next Free Capacity')),
-        ('another_time', _('Another Time')),
-    ))
+            ('today', _('Today')),
+            ('tomorrow', _('Tomorrow')),
+            ('next_free_capacity', _('Next Free Capacity')),
+            ('another_time', _('Another Time')),
+        ))
     schedule_for_date = forms.DateField(
         label=_('Schedule for date'), initial=date.today)
     duration = forms.DecimalField(
