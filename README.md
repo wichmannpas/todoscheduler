@@ -1,6 +1,8 @@
 TodoScheduler
 =============
 
+[![Build Status](https://travis-ci.org/wichmannpas/todoscheduler.svg?branch=master)](https://travis-ci.org/wichmannpas/todoscheduler)
+
 TodoScheduler helps you managing and scheduling your tasks. You can split your tasks into chunks and schedule them for specific days.
 Scheduling all of your tasks means less postponed tasks and a higher productivity. That means more free time!
 
