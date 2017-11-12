@@ -1,3 +1,4 @@
 Django
 django-registration
 django_widget_tweaks
+typing; python_version <= '3.4'
