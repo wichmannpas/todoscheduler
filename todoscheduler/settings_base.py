@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'pipeline',
     'widget_tweaks',
 ]
 
@@ -38,6 +39,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'pipeline.middleware.MinifyHTMLMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -100,6 +102,53 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_STORAGE = 'pipeline.storage.PipelineCachedStorage'
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'pipeline.finders.PipelineFinder',
+)
+PIPELINE = {
+    'STYLESHEETS': {
+        'base': {
+            'source_filenames': (
+              'base/css/spectre.min.css',
+              'base/css/font-awesome.min.css',
+            ),
+            'output_filename': 'css/base.css',
+        },
+        'task': {
+            'source_filenames': (
+              'base/css/spectre.min.css',
+              'base/css/font-awesome.min.css',
+              'task/css/task.scss',
+            ),
+            'output_filename': 'css/task.css',
+        },
+    },
+    'JAVASCRIPT': {
+        'base': {
+            'source_filenames': (
+              'base/js/jquery.js',
+            ),
+            'output_filename': 'js/base.js',
+        },
+        'task': {
+            'source_filenames': (
+              'base/js/jquery.js',
+              'task/js/task.es6',
+            ),
+            'output_filename': 'js/task.js',
+        },
+    },
+    'COMPILERS': (
+        'pipeline.compilers.es6.ES6Compiler',
+        'pipeline.compilers.sass.SASSCompiler',
+    ),
+    'BABEL_ARGUMENTS': '--presets modern-browsers --plugins transform-es2015-block-scoping',
+    'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
+    'CSS_COMPRESSOR': 'pipeline.compressors.cssmin.CSSMinCompressor',
+}
 
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
