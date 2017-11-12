@@ -12,5 +12,9 @@ install:
   - pip install -r requirements.txt
   - pip install flake8
 
+before_script:
+  - cp todoscheduler/settings.py.example todoscheduler/settings.py
+
 script:
   - flake8
+  - python manage.py test
