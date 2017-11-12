@@ -58,6 +58,12 @@ docs/_build/
 # PyBuilder
 target/
 
+# unicode
+categories.json
+confusables.json
+!vendor/unicode/categories.json
+!vendor/unicode/confusables.json
+
 .idea
 db.sqlite3
 todoscheduler/settings.py

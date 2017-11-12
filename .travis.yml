@@ -14,6 +14,8 @@ install:
 
 before_script:
   - cp todoscheduler/settings.py.example todoscheduler/settings.py
+  - cp vendor/unicode/categories.json categories.json
+  - cp vendor/unicode/confusables.json confusables.json
 
 script:
   - flake8
