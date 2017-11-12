@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load pipeline %}{% load static %}<!doctype html>
 <html>
   <head>
     <meta name="charset" content="utf-8" />
@@ -6,9 +6,9 @@
 
     <title>TodoScheduler</title>
 
-    <link rel="stylesheet" type="text/css" href="{% static 'base/css/spectre.min.css' %}" />
-    <link rel="stylesheet" type="text/css" href="{% static 'base/css/font-awesome.min.css' %}" />
-
+    {% block css %}
+      {% stylesheet 'base' %}
+    {% endblock css %}
     {% block head %}{% endblock head %}
   </head>
   <body>
@@ -20,7 +20,8 @@
       {% block content %}{% endblock content %}
     </div>
 
-    <script type="text/javascript" src="{% static 'base/js/jquery.min.js' %}"></script>
-    {% block additional_js %}{% endblock additional_js %}
+    {% block js %}
+      {% javascript 'base' %}
+    {% endblock js %}
   </body>
 </html>

@@ -1,4 +1,5 @@
-from .settings_base import *  # NOQA
+import os
+from .settings_base import *  # NOQA: F403
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -31,3 +32,5 @@ EMAIL_PORT = 25
 # MAIL_HOST_PASSWORD = 'foobar123'
 # EMAIL_USE_TLS = True
 # EMAIL_USE_SSL = False
+
+STATIC_ROOT = os.path.join(BASE_DIR, '_static')  # NOQA: F405

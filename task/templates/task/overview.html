@@ -2,15 +2,16 @@
 
 {% load humanize %}
 {% load i18n %}
+{% load pipeline %}
 {% load static %}
 {% load task %}
 
-{% block head %}
-  <link rel="stylesheet" type="text/css" href="{% static 'task/css/task.css' %}" />
-{% endblock head %}
-{% block additional_js %}
-  <script type="text/javascript" src="{% static 'task/js/task.js' %}"></script>
-{% endblock additional_js %}
+{% block css %}
+  {% stylesheet 'task' %}
+{% endblock css %}
+{% block js %}
+  {% javascript 'task' %}
+{% endblock js %}
 
 {% block content %}
   <p>
