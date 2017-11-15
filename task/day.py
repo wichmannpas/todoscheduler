@@ -31,6 +31,13 @@ class Day:
         return Decimal(sum(execution.duration for execution in self.executions))
 
     @property
+    def finished_duration(self) -> Decimal:
+        return Decimal(sum(
+            execution.duration
+            for execution in self.executions
+            if execution.finished))
+
+    @property
     def available_duration(self) -> Decimal:
         return self.max_duration - self.scheduled_duration
 
@@ -39,3 +46,7 @@ class Day:
         if self.is_weekday():
             return self.user.workhours_weekday
         return self.user.workhours_weekend
+
+    @property
+    def remaining_duration(self) -> Decimal:
+        return self.scheduled_duration - self.finished_duration
