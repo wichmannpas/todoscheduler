@@ -189,3 +189,55 @@ class DayTest(TestCase):
         self.assertIsInstance(
             day.max_duration,
             Decimal)
+
+    def test_finished_duration(self):
+        day = Day(self.user1, self.weekenddate1)
+        self.assertEqual(
+            day.finished_duration,
+            0)
+        execution1 = TaskExecution(duration=2)
+        day.executions.append(execution1)
+        self.assertEqual(
+            day.finished_duration,
+            0)
+        execution1.finished = True
+        self.assertEqual(
+            day.finished_duration,
+            2)
+        execution2 = TaskExecution(duration=4)
+        day.executions.append(execution2)
+        self.assertEqual(
+            day.finished_duration,
+            2)
+        execution2.finished = True
+        self.assertEqual(
+            day.finished_duration,
+            6)
+
+    def test_remaining_duration(self):
+        day = Day(self.user1, self.weekenddate1)
+        self.assertEqual(
+            day.remaining_duration,
+            0)
+        execution1 = TaskExecution(duration=2)
+        day.executions.append(execution1)
+        self.assertEqual(
+            day.remaining_duration,
+            2)
+        execution2 = TaskExecution(duration=1)
+        day.executions.append(execution2)
+        self.assertEqual(
+            day.remaining_duration,
+            3)
+        execution1.finished = True
+        self.assertEqual(
+            day.remaining_duration,
+            1)
+        execution2.finished = True
+        self.assertEqual(
+            day.remaining_duration,
+            0)
+        execution1.finished = False
+        self.assertEqual(
+            day.remaining_duration,
+            2)

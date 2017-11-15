@@ -46,7 +46,10 @@
       {% for day in schedule_by_day %}
         <th class="{% if day.in_past %} past-day{% elif day.is_today %} current-day{% endif %}{% if day.scheduled_duration > day.max_duration %} overloaded-day{% endif %}">
           {{ day.day|naturalday }}
-          ({{ day.scheduled_duration.normalize|intcomma }}h/{{ day.max_duration.normalize|intcomma }}h)
+          <span class="float-right">
+            <span class="fa fa-clock-o tooltip" data-tooltip="{% trans 'Max duration for day' %}">
+            </span>&nbsp;{{ day.max_duration.normalize|intcomma }}h
+          </span>
         </th>
       {% endfor %}
     </tr>
@@ -116,6 +119,16 @@
             </span>
           {% endfor %}
         </td>
+      {% endfor %}
+    </tr>
+    <tr>
+      {% for day in schedule_by_day %}
+        <th class="{% if day.in_past %} past-day{% elif day.is_today %} current-day{% endif %}{% if day.scheduled_duration > day.max_duration %} overloaded-day{% endif %}">
+          <span class="float-right">
+            <span class="fa fa-clock-o tooltip" data-tooltip="{% trans 'Remaining/total scheduled duration' %}">
+            </span>&nbsp;{{ day.remaining_duration.normalize|intcomma }}h/{{ day.scheduled_duration.normalize|intcomma }}h
+          </span>
+        </th>
       {% endfor %}
     </tr>
   </table>
