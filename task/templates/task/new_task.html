@@ -10,8 +10,8 @@
         {% trans 'New Task' %}
       </div>
     </div>
-    <div class="modal-body">
-      <form action="{% url 'task:create_task' %}" method="POST">
+    <form action="{% url 'task:create_task' %}" method="POST">
+      <div class="modal-body">
         <div class="content">
           {% csrf_token %}
 
