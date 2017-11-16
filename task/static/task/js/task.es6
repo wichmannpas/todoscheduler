@@ -7,6 +7,26 @@
   }
 
   /**
+   * Initialize and display the edit task modal.
+   */
+  function initEditTask(event) {
+    if (event !== undefined) {
+      event.preventDefault();
+    }
+    let taskData = $(this).parent().data();
+    let name = $('#edit_task_name');
+    let duration = $('#edit_task_duration');
+    name.val(taskData.name);
+    duration.val(taskData.duration);
+    $('#edit_task_id').val(taskData.taskid);
+    $('#edit_task_scheduled').text(taskData.scheduledDuration);
+    $('#edit_task_finished').text(taskData.finishedDuration);
+
+    $('#edit_task').addClass('active');
+    name.focus();
+  }
+
+  /**
    * Initialize and display the new task modal.
    */
   function initNewTask(event) {
@@ -53,6 +73,7 @@
         scheduleForDate.hide();
       }
     });
+    $('.task-edit').click(initEditTask);
     $('.task-schedule').click(initSchedule);
     $('.modal-close').click(closeModals);
     $('.modal-overlay').click(closeModals);
