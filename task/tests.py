@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
+from task.templatetags.task import more_natural_day
 from .day import Day
 from .models import TaskExecution
 
@@ -241,3 +242,69 @@ class DayTest(TestCase):
         self.assertEqual(
             day.remaining_duration,
             2)
+
+
+class TemplateTagsTest(TestCase):
+    def test_more_natural_day(self):
+        base_date = date(2017, 11, 16)
+
+        day = base_date - timedelta(days=3)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Nov. 13, 2017'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Nov. 14, 2017'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'yesterday'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'today'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'tomorrow'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Saturday'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Sunday'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Monday'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Tuesday'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Wednesday'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Nov. 23, 2017'
+        )
+        day += timedelta(days=1)
+        self.assertEqual(
+            more_natural_day(day, base_date),
+            'Nov. 24, 2017'
+        )
