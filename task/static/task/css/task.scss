@@ -1,22 +1,40 @@
-td.current-day, th.current-day {
-  background: #fffeaf;
-}
+.schedule.columns {
+  margin: 0;
 
-td.past-day {
-  background: #e3e3e3;
-  opacity: 0.9;
-}
+  .column {
+    vertical-align: top;
 
-th.past-day {
-  opacity: 0.6;
-}
+    margin: 0.4em 0;
 
-th.overloaded-day {
-  background: #ffa195 !important;
-}
+    @media (min-width: 601px) and (min-height: 600px) {
+      .body {
+        height: 25em;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+    }
 
-.schedule tr td {
-  vertical-align: top;
+    &.past-day {
+      background: #e3e3e3;
+      opacity: 0.6;
+    }
+
+    &.current-day {
+      background: #fffeaf;
+    }
+
+    &.overloaded-day {
+      background: #ffa195 !important;
+    }
+  }
+
+  div.header {
+    background: #f4eff4;
+  }
+
+  div.header, div.footer {
+    padding: 0.2em;
+  }
 }
 
 span.task-execution {
