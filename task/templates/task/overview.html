@@ -58,14 +58,13 @@
             <span
                 class="task-execution {% if execution.finished %}finished{% elif execution.overdue %}overdue{% endif %}"
                 style="height: {{ execution.duration|multiply:4|to_str }}em;">
-            <strong>{{ execution.task.name }}</strong>
-            <span class="float-right">
-              {{ execution.duration.normalize|intcomma }}h
-              {% if execution.task.estimated_duration != execution.duration %}
-                ({{ execution.task.estimated_duration.normalize|intcomma }}h)
-              {% endif %}
-            </span>
-
+              <strong>{{ execution.task.name }}</strong>
+              <span class="float-right">
+                {{ execution.duration.normalize|intcomma }}h
+                {% if execution.task.duration != execution.duration %}
+                  ({{ execution.task.duration.normalize|intcomma }}h)
+                {% endif %}
+              </span>
             <br/>
             <span class="float-left">
               {% if execution.finished %}
