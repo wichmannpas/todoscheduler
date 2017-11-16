@@ -6,7 +6,7 @@ from django.test import TestCase
 
 from task.templatetags.task import more_natural_day
 from .day import Day
-from .models import TaskExecution
+from .models import TaskExecution, Task
 
 
 class DayTest(TestCase):
@@ -308,3 +308,239 @@ class TemplateTagsTest(TestCase):
             more_natural_day(day, base_date),
             'Nov. 24, 2017'
         )
+
+
+class TaskTest(TestCase):
+    def setUp(self):
+        self.user1 = get_user_model().objects.create(
+            username='johndoe',
+            email='a',
+            workhours_weekday=Decimal(10),
+            workhours_weekend=Decimal(5))
+        self.user2 = get_user_model().objects.create(
+            username='foobar',
+            email='b')
+
+        self.weekdaydate1 = date(2017, 11, 6)
+
+    def test_finished_duration(self):
+        task1 = Task.objects.create(user=self.user1, duration=42)
+        self.assertEqual(
+            task1.finished_duration,
+            0)
+        exec1 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=4,
+            finished=False)
+        self.assertEqual(
+            task1.finished_duration,
+            0)
+        exec1.finished = True
+        exec1.save()
+        self.assertEqual(
+            task1.finished_duration,
+            4)
+        exec2 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=2,
+            finished=False)
+        self.assertEqual(
+            task1.finished_duration,
+            4)
+        exec2.finished = True
+        exec2.save()
+        self.assertEqual(
+            task1.finished_duration,
+            6)
+        exec1.finished = False
+        exec1.save()
+        self.assertEqual(
+            task1.finished_duration,
+            2)
+
+    def test_scheduled_duration(self):
+        task1 = Task.objects.create(user=self.user1, duration=42)
+        self.assertEqual(
+            task1.scheduled_duration,
+            0)
+        exec1 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=4,
+            finished=False)
+        self.assertEqual(
+            task1.scheduled_duration,
+            4)
+        exec1.finished = True
+        exec1.save()
+        self.assertEqual(
+            task1.scheduled_duration,
+            4)
+        exec2 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=2,
+            finished=False)
+        self.assertEqual(
+            task1.scheduled_duration,
+            6)
+        exec2.finished = True
+        exec2.save()
+        self.assertEqual(
+            task1.scheduled_duration,
+            6)
+        exec1.finished = False
+        exec1.save()
+        self.assertEqual(
+            task1.scheduled_duration,
+            6)
+
+    def test_unscheduled_duration(self):
+        task1 = Task.objects.create(user=self.user1, duration=42)
+        self.assertEqual(
+            task1.unscheduled_duration,
+            42)
+        exec1 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=4,
+            finished=False)
+        self.assertEqual(
+            task1.unscheduled_duration,
+            38)
+        exec1.finished = True
+        exec1.save()
+        self.assertEqual(
+            task1.unscheduled_duration,
+            38)
+        exec2 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=2,
+            finished=False)
+        self.assertEqual(
+            task1.unscheduled_duration,
+            36)
+        exec2.finished = True
+        exec2.save()
+        self.assertEqual(
+            task1.unscheduled_duration,
+            36)
+        exec1.finished = False
+        exec1.save()
+        self.assertEqual(
+            task1.unscheduled_duration,
+            36)
+
+    def test_unscheduled_tasks(self):
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user1)),
+            set())
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user2)),
+            set())
+        task1 = Task.objects.create(user=self.user1, duration=2)
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user1)),
+            {task1})
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user2)),
+            set())
+        exec1 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=1,
+            finished=False)
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user1)),
+            {task1})
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user2)),
+            set())
+        exec2 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=1,
+            finished=False)
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user1)),
+            set())
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user2)),
+            set())
+        exec2.finished = True
+        exec2.save()
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user1)),
+            set())
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user2)),
+            set())
+        exec1.finished = True
+        exec1.save()
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user1)),
+            set())
+        self.assertEqual(
+            set(Task.unscheduled_tasks(self.user2)),
+            set())
+
+    def test_free_capacity(self):
+        self.assertEqual(
+            Task.free_capacity(self.user1, self.weekdaydate1),
+            Decimal(10))
+        task1 = Task.objects.create(user=self.user1, duration=2)
+        self.assertEqual(
+            Task.free_capacity(self.user1, self.weekdaydate1),
+            Decimal(10))
+        exec1 = TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=1,
+            finished=False)
+        self.assertEqual(
+            Task.free_capacity(self.user1, self.weekdaydate1),
+            Decimal(9))
+        exec1.finished = True
+        exec1.save()
+        self.assertEqual(
+            Task.free_capacity(self.user1, self.weekdaydate1),
+            Decimal(9))
+
+    def test_duration_types(self):
+        task1 = Task.objects.create(user=self.user1, duration=42)
+        self.assertIsInstance(
+            task1.finished_duration,
+            Decimal)
+        self.assertIsInstance(
+            task1.scheduled_duration,
+            Decimal)
+        self.assertIsInstance(
+            task1.unscheduled_duration,
+            Decimal)
+        TaskExecution.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=4,
+            finished=False)
+        self.assertIsInstance(
+            task1.finished_duration,
+            Decimal)
+        self.assertIsInstance(
+            task1.scheduled_duration,
+            Decimal)
+        self.assertIsInstance(
+            task1.unscheduled_duration,
+            Decimal)
