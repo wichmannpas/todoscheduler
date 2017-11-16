@@ -45,7 +45,6 @@ class Task(models.Model):
             # TODO: aggregate this in the database!
             for offset in range(90):
                 cur_day = today + timedelta(days=offset)
-                print(cur_day, Task.free_capacity(self.user, cur_day))
                 if Task.free_capacity(self.user, cur_day) >= duration:
                     day = cur_day
                     break
