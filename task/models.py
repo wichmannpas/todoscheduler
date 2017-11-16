@@ -67,7 +67,20 @@ class Task(models.Model):
         return day
 
     @property
-    def unscheduled_duration(self):
+    def finished_duration(self) -> Decimal:
+        if hasattr(self, 'finished_duration_agg'):
+            return self.finished_duration_agg
+        return self.executions.filter(finished=True).aggregate(
+            Sum('duration'))['duration__sum'] or Decimal(0)
+
+    @property
+    def scheduled_duration(self) -> Decimal:
+        if hasattr(self, 'scheduled_duration_agg'):
+            return self.scheduled_duration_agg
+        return self.executions.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)
+
+    @property
+    def unscheduled_duration(self) -> Decimal:
         """Get the duration of this task which is not yet scheduled."""
         if hasattr(self, 'unscheduled_duration_agg'):
             return self.unscheduled_duration_agg
@@ -79,11 +92,11 @@ class Task(models.Model):
     def unscheduled_tasks(user: get_user_model()):
         """Get all tasks which are not yet fully scheduled."""
         return user.tasks.annotate(
-            scheduled_duration=Coalesce(
+            scheduled_duration_agg=Coalesce(
                 Sum('executions__duration'),
                 0)).annotate(
             unscheduled_duration_agg=F(
-                'duration') - F('scheduled_duration')
+                'duration') - F('scheduled_duration_agg')
         ).filter(unscheduled_duration_agg__gt=0)
 
     @staticmethod
