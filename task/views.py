@@ -194,7 +194,7 @@ def overview(request: HttpRequest) -> HttpResponse:
     return render(request, 'task/overview.html', {
         'schedule_form': ScheduleForm(),
         'schedule_by_day': TaskExecution.schedule_by_day(
-            request.user, date.today() - timedelta(days=1), 4),
+            request.user, date.today() - timedelta(days=1), 7),
         'task_form': TaskForm(),
         'unscheduled_tasks': Task.unscheduled_tasks(request.user),
     })
