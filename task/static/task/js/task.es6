@@ -48,13 +48,13 @@
     if (event !== undefined) {
       event.preventDefault();
     }
-    let task = $(this).parent();
+    let task = $(this).parent().parent();
     let durationInput = $('#schedule_duration');
 
-    $('#schedule_data_name').text(task.data('name'));
-    $('#schedule_data_unscheduled_duration').text(task.data('unscheduled-duration'));
+    $('#schedule_data_name').text(task.data('taskName'));
+    $('#schedule_data_unscheduled_duration').text(task.data('taskUnscheduledDuration'));
     $('#schedule_id').val(task.data('taskid'));
-    durationInput.val(task.data('unscheduled-duration'));
+    durationInput.val(task.data('taskUnscheduledDuration'));
 
     $('#schedule').addClass('active');
     $('#schedule_for').val('today');
