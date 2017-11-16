@@ -30,12 +30,16 @@
         <li
             data-name="{{ task.name }}"
             data-taskid="{{ task.pk }}"
+            data-duration="{{ task.duration.normalize }}"
+            data-scheduled-duration="{{ task.scheduled_duration.normalize }}"
+            data-finished-duration="{{ task.finished_duration.normalize }}"
             data-unscheduled-duration="{{ task.unscheduled_duration.normalize|intcomma }}">
           {{ task.name }}
           ({{ task.unscheduled_duration.normalize|intcomma }}h)
-          <a href="#" class="task-schedule">
-            {% trans 'Schedule' %}
-          </a>
+          <a href="#" class="task-edit tooltip" data-tooltip="{% trans 'Edit task' %}">
+            <span class="fa fa-pencil"></span></a>
+          <a href="#" class="task-schedule tooltip" data-tooltip="{% trans 'Schedule' %}">
+            <span class="fa fa-play"></span></a>
         </li>
       {% endfor %}
     </ul>
@@ -129,5 +133,6 @@
   </div>
 
   {% include 'task/new_task.html' %}
+  {% include 'task/edit_task.html' %}
   {% include 'task/schedule.html' %}
 {% endblock content %}

@@ -21,4 +21,6 @@ urlpatterns = [
         views.create_task, name='create_task'),
     url(r'^task/schedule/$',
         views.schedule_task, name='schedule_task'),
+    url(r'^task/update/$',
+        views.update_task, name='update_task'),
 ]

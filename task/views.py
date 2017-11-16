@@ -17,6 +17,24 @@ from .models import Task, TaskExecution
 
 @require_POST
 @login_required
+def update_task(
+        request: HttpRequest) -> HttpResponse:
+    """Update a new task."""
+    task_id = request.POST.get('task_id')
+    task = get_object_or_404(request.user.tasks, pk=task_id)
+    form = TaskForm(request.POST, instance=task)
+    if not form.is_valid():
+        messages.warning(
+            request, _('The task is invalid'))
+        return redirect('task:overview')
+    form.save()
+    messages.success(
+        request, _('The task "%s" was updated successfully.') % (form.instance.name,))
+    return redirect('task:overview')
+
+
+@require_POST
+@login_required
 def create_task(
         request: HttpRequest) -> HttpResponse:
     """Create a new task."""
