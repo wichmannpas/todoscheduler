@@ -46,7 +46,7 @@
       <div
           class="column col-3 col-md-6 col-sm-12 {% if day.in_past %} past-day{% elif day.is_today %} current-day{% endif %}{% if day.scheduled_duration > day.max_duration %} overloaded-day{% endif %}">
         <div class="header">
-          {{ day.day|naturalday }}
+          {{ day.day|more_natural_day }}
           <span class="float-right">
           <span class="fa fa-clock-o tooltip"
                 data-tooltip="{% trans 'Max duration for day' %}">
