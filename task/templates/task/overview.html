@@ -28,18 +28,20 @@
     <ul>
       {% for task in unscheduled_tasks %}
         <li
-            data-name="{{ task.name }}"
+            data-task-name="{{ task.name }}"
             data-taskid="{{ task.pk }}"
-            data-duration="{{ task.duration.normalize }}"
-            data-scheduled-duration="{{ task.scheduled_duration.normalize }}"
-            data-finished-duration="{{ task.finished_duration.normalize }}"
-            data-unscheduled-duration="{{ task.unscheduled_duration.normalize|intcomma }}">
-          {{ task.name }}
-          ({{ task.unscheduled_duration.normalize|intcomma }}h)
-          <a href="#" class="task-edit tooltip" data-tooltip="{% trans 'Edit task' %}">
-            <span class="fa fa-pencil"></span></a>
-          <a href="#" class="task-schedule tooltip" data-tooltip="{% trans 'Schedule' %}">
-            <span class="fa fa-play"></span></a>
+            data-task-duration="{{ task.duration.normalize }}"
+            data-task-scheduled-duration="{{ task.scheduled_duration.normalize }}"
+            data-task-finished-duration="{{ task.finished_duration.normalize }}"
+            data-task-unscheduled-duration="{{ task.unscheduled_duration.normalize|intcomma }}">
+          <span>
+            {{ task.name }}
+            ({{ task.unscheduled_duration.normalize|intcomma }}h)
+            <a href="#" class="task-edit tooltip" data-tooltip="{% trans 'Edit task' %}">
+              <span class="fa fa-pencil"></span></a>
+            <a href="#" class="task-schedule tooltip" data-tooltip="{% trans 'Schedule' %}">
+              <span class="fa fa-play"></span></a>
+          </span>
         </li>
       {% endfor %}
     </ul>
@@ -61,7 +63,13 @@
           {% for execution in day.executions %}
             <span
                 class="task-execution {% if execution.finished %}finished{% elif execution.overdue %}overdue{% endif %}"
-                style="height: {{ execution.duration|multiply:4|to_str }}em;">
+                style="height: {{ execution.duration|multiply:4|to_str }}em;"
+                data-task-name="{{ execution.task.name }}"
+                data-taskid="{{ execution.task.pk }}"
+                data-task-duration="{{ execution.task.duration.normalize }}"
+                data-task-scheduled-duration="{{ execution.task.scheduled_duration.normalize }}"
+                data-task-finished-duration="{{ execution.task.finished_duration.normalize }}"
+                data-task-unscheduled-duration="{{ execution.task.unscheduled_duration.normalize|intcomma }}">
               <strong>{{ execution.task.name }}</strong>
               <span class="float-right">
                 {{ execution.duration.normalize|intcomma }}h
@@ -96,6 +104,8 @@
                  data-tooltip="{% trans 'Needs more time on another day' %}">
                 <span class="fa fa-files-o"></span>
               </a>
+              <a href="#" class="task-edit tooltip" data-tooltip="{% trans 'Edit task' %}">
+                <span class="fa fa-pencil"></span></a>
             </span>
             <span class="float-right">
               <a href="{% url 'task:move_task_execution' execution.pk 'up' %}"

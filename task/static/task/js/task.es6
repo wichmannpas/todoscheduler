@@ -13,14 +13,14 @@
     if (event !== undefined) {
       event.preventDefault();
     }
-    let taskData = $(this).parent().data();
+    let taskData = $(this).parent().parent().data();
     let name = $('#edit_task_name');
     let duration = $('#edit_task_duration');
-    name.val(taskData.name);
-    duration.val(taskData.duration);
+    name.val(taskData.taskName);
+    duration.val(taskData.taskDuration);
     $('#edit_task_id').val(taskData.taskid);
-    $('#edit_task_scheduled').text(taskData.scheduledDuration);
-    $('#edit_task_finished').text(taskData.finishedDuration);
+    $('#edit_task_scheduled').text(taskData.taskScheduledDuration);
+    $('#edit_task_finished').text(taskData.taskFinishedDuration);
 
     $('#edit_task').addClass('active');
     name.focus();
