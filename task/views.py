@@ -43,12 +43,12 @@ def change_task_execution_duration(
         pk=task_execution_pk)
     with transaction.atomic():
         task_execution.duration += Decimal(seconds_delta) / 3600
-        task_execution.task.estimated_duration += Decimal(seconds_delta) / 3600
-        if task_execution.duration <= 0 or task_execution.task.estimated_duration <= 0:
+        task_execution.task.duration += Decimal(seconds_delta) / 3600
+        if task_execution.duration <= 0 or task_execution.task.duration <= 0:
             messages.warning(request, _('The duration is too low.'))
             return redirect('task:overview')
         task_execution.save(update_fields=('duration',))
-        task_execution.task.save(update_fields=('estimated_duration',))
+        task_execution.task.save(update_fields=('duration',))
     return redirect('task:overview')
 
 
@@ -63,11 +63,11 @@ def delete_task_execution(
         pk=task_execution_pk)
     with transaction.atomic():
         task = task_execution.task
-        task.estimated_duration -= task_execution.duration
-        if task.estimated_duration <= 0:
+        task.duration -= task_execution.duration
+        if task.duration <= 0:
             task.delete()
         else:
-            task.save(update_fields=('estimated_duration',))
+            task.save(update_fields=('duration',))
         task_execution.delete()
         messages.success(request, _('The task execution has been deleted successfully.'))
     return redirect('task:overview')
@@ -140,8 +140,8 @@ def reserve_task_time(
         request: HttpRequest,
         task_pk: int, seconds: int) -> HttpResponse:
     task = get_object_or_404(request.user.tasks, pk=task_pk)
-    task.estimated_duration = F('estimated_duration') + Decimal(seconds) / 3600
-    task.save(update_fields=('estimated_duration',))
+    task.duration = F('duration') + Decimal(seconds) / 3600
+    task.save(update_fields=('duration',))
     return redirect('task:overview')
 
 
@@ -167,7 +167,7 @@ def schedule_task(
                 request, _(
                     'The scheduled duration is greater than the unscheduled task duration. '
                     'The task duration is increased.'))
-            task.estimated_duration += duration - task.unscheduled_duration
+            task.duration += duration - task.unscheduled_duration
         scheduled_day = task.schedule(schedule_for, schedule_for_date, duration)
         if not scheduled_day:
             if schedule_for == 'next_free_capacity':

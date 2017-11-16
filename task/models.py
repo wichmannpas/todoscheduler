@@ -18,7 +18,7 @@ class Task(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tasks')
     name = models.CharField(max_length=40)
-    estimated_duration = models.DecimalField(
+    duration = models.DecimalField(
         max_digits=5, decimal_places=2, default=1)
 
     def __str__(self) -> str:
@@ -72,7 +72,7 @@ class Task(models.Model):
         if hasattr(self, 'unscheduled_duration_agg'):
             return self.unscheduled_duration_agg
         return (
-            self.estimated_duration -
+            self.duration -
             (self.executions.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)))
 
     @staticmethod
@@ -83,7 +83,7 @@ class Task(models.Model):
                 Sum('executions__duration'),
                 0)).annotate(
             unscheduled_duration_agg=F(
-                'estimated_duration') - F('scheduled_duration')
+                'duration') - F('scheduled_duration')
         ).filter(unscheduled_duration_agg__gt=0)
 
     @staticmethod

@@ -28,5 +28,5 @@ class TaskForm(forms.ModelForm):
         model = Task
         fields = (
             'name',
-            'estimated_duration',
+            'duration',
         )

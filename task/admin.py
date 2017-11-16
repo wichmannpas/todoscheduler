@@ -7,7 +7,7 @@ from .models import Task, TaskExecution
 class TaskAdmin(admin.ModelAdmin):
     list_display = (
         'name',
-        'estimated_duration',
+        'duration',
         'user',
     )
 
