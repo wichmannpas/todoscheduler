@@ -15,7 +15,7 @@ services:
 
 install:
   - pip install -r requirements.txt
-  - pip install flake8
+  - pip install -r requirements-testing.txt
   - pip install codecov
   - pip install psycopg2
   - npm install cssmin
