@@ -1,4 +1,6 @@
 language: python
+addons:
+  chrome: stable
 cache:
   - pip: true
   - bundler: true
@@ -23,6 +25,12 @@ install:
   - npm install babel-cli babel-plugin-transform-es2015-block-scoping babel-preset-modern-browsers
   - export PATH=$PATH:$PWD/node_modules/.bin/
   - gem install sass
+  - wget -N http://chromedriver.storage.googleapis.com/2.33/chromedriver_linux64.zip -P ~/
+  - unzip ~/chromedriver_linux64.zip -d ~/
+  - rm ~/chromedriver_linux64.zip
+  - sudo mv -f ~/chromedriver /usr/local/share/
+  - sudo chmod +x /usr/local/share/chromedriver
+  - sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
 
 before_script:
   - cp todoscheduler/settings.py.example todoscheduler/settings.py
@@ -32,8 +40,8 @@ before_script:
 
 script:
   - flake8
-  - coverage run manage.py test
   - ./manage.py collectstatic --no-input
+  - coverage run manage.py test
 
 after_success:
   - codecov
