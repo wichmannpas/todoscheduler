@@ -570,6 +570,129 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(task.name, 'Testtask')
         self.assertEqual(task.duration, Decimal('42.2'))
 
+    def test_edit_task_duration_unscheduled(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=1,
+            day_order=0,
+            finished=True)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-edit').click()
+        scheduled_display = self.selenium.find_element_by_id('edit_task_scheduled')
+        self.assertEqual(
+            scheduled_display.get_attribute('innerHTML'),
+            '3')
+        finished_display = self.selenium.find_element_by_id('edit_task_finished')
+        self.assertEqual(
+            finished_display.get_attribute('innerHTML'),
+            '1')
+        duration_input = self.selenium.find_element_by_id('edit_task_duration')
+        duration_input.clear()
+        duration_input.send_keys('42')
+        self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.name,
+            'Testtask')
+        self.assertEqual(
+            task.duration,
+            Decimal(42))
+
+    def test_edit_task_name_unscheduled(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=1,
+            day_order=0,
+            finished=True)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-edit').click()
+        scheduled_display = self.selenium.find_element_by_id('edit_task_scheduled')
+        self.assertEqual(
+            scheduled_display.get_attribute('innerHTML'),
+            '3')
+        finished_display = self.selenium.find_element_by_id('edit_task_finished')
+        self.assertEqual(
+            finished_display.get_attribute('innerHTML'),
+            '1')
+        name_input = self.selenium.find_element_by_id('edit_task_name')
+        name_input.clear()
+        name_input.send_keys('Edited Task')
+        self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.name,
+            'Edited Task')
+        self.assertEqual(
+            task.duration,
+            Decimal(5))
+
+    def test_edit_task_name_duration_unscheduled(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=1,
+            day_order=0,
+            finished=True)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-edit').click()
+        scheduled_display = self.selenium.find_element_by_id('edit_task_scheduled')
+        self.assertEqual(
+            scheduled_display.get_attribute('innerHTML'),
+            '3')
+        finished_display = self.selenium.find_element_by_id('edit_task_finished')
+        self.assertEqual(
+            finished_display.get_attribute('innerHTML'),
+            '1')
+        name_input = self.selenium.find_element_by_id('edit_task_name')
+        name_input.clear()
+        name_input.send_keys('Edited Task')
+        duration_input = self.selenium.find_element_by_id('edit_task_duration')
+        duration_input.clear()
+        duration_input.send_keys('42')
+        self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.name,
+            'Edited Task')
+        self.assertEqual(
+            task.duration,
+            Decimal(42))
+
     def test_schedule_task_for_today(self):
         self.assertEqual(TaskExecution.objects.count(), 0)
 
