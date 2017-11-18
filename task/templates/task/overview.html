@@ -54,7 +54,7 @@
         <div class="header">
           {{ day.day|more_natural_day }}
           <span class="float-right">
-          <span class="fa fa-clock-o tooltip"
+          <span class="fa fa-clock-o tooltip tooltip-left"
                 data-tooltip="{% trans 'Max duration for day' %}">
           </span>&nbsp;{{ day.max_duration.normalize|intcomma }}h
         </span>
@@ -81,50 +81,50 @@
             <span class="float-left">
               {% if execution.finished %}
                 <a href="{% url 'task:finish_task_execution' execution.pk 'no' %}"
-                   class="tooltip" data-tooltip="{% trans 'Not done' %}">
+                   class="tooltip tooltip-right" data-tooltip="{% trans 'Not done' %}">
                   <span class="fa fa-undo"></span>
                 </a>
               {% else %}
                 <a href="{% url 'task:finish_task_execution' execution.pk 'yes' %}"
-                   class="tooltip" data-tooltip="{% trans 'Done' %}">
+                   class="tooltip tooltip-right" data-tooltip="{% trans 'Done' %}">
                   <span class="fa fa-check"></span>
                 </a>
               {% endif %}
               <a href="{% url 'task:delete_task_execution' execution.pk %}"
                  onclick="return confirm('{% trans 'Are you sure that you want to delete this task?' %}');"
-                 class="tooltip" data-tooltip="{% trans 'No time needed on this day' %}">
+                 class="tooltip tooltip-right" data-tooltip="{% trans 'No time needed on this day' %}">
                 <span class="fa fa-times"></span>
               </a>
               <a href="{% url 'task:postpone_task_execution' execution.pk %}"
-                 class="tooltip" data-tooltip="{% trans 'Postpone to another day' %}">
+                 class="tooltip tooltip-right" data-tooltip="{% trans 'Postpone to another day' %}">
                 <span class="fa fa-clock-o"></span>
               </a>
               <a href="{% url 'task:reserve_task_time' execution.task.pk 3600 %}"
-                 class="tooltip"
+                 class="tooltip tooltip-right"
                  data-tooltip="{% trans 'Needs more time on another day' %}">
                 <span class="fa fa-files-o"></span>
               </a>
-              <a href="#" class="task-edit tooltip" data-tooltip="{% trans 'Edit task' %}">
+              <a href="#" class="task-edit tooltip tooltip-right" data-tooltip="{% trans 'Edit task' %}">
                 <span class="fa fa-pencil"></span></a>
             </span>
             <span class="float-right">
               <a href="{% url 'task:move_task_execution' execution.pk 'up' %}"
-                 class="tooltip{% if execution.finished %} invisible{% endif %}"
+                 class="tooltip tooltip-left{% if execution.finished %} invisible{% endif %}"
                  data-tooltip="{% trans 'Needs time earlier' %}">
                 <span class="fa fa-arrow-up"></span>
               </a>
               <a href="{% url 'task:move_task_execution' execution.pk 'down' %}"
-                 class="tooltip{% if execution.finished %} invisible{% endif %}"
+                 class="tooltip tooltip-left{% if execution.finished %} invisible{% endif %}"
                  data-tooltip="{% trans 'Needs time later' %}">
                 <span class="fa fa-arrow-down"></span>
               </a>
               <a href="{% url 'task:change_task_execution_duration' execution.pk -1800 %}"
-                 class="tooltip{% if execution.duration <= 0.5 %} invisible{% endif %}"
+                 class="tooltip tooltip-left{% if execution.duration <= 0.5 %} invisible{% endif %}"
                  data-tooltip="{% trans 'Takes 30 less minutes' %}">
                 <span class="fa fa-minus"></span>
               </a>
               <a href="{% url 'task:change_task_execution_duration' execution.pk 1800 %}"
-                 class="tooltip" data-tooltip="{% trans 'Takes 30 more minutes' %}">
+                 class="tooltip tooltip-left" data-tooltip="{% trans 'Takes 30 more minutes' %}">
                 <span class="fa fa-plus"></span>
               </a>
             </span>
