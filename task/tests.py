@@ -4,10 +4,12 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from freezegun import freeze_time
+from selenium.webdriver.support.ui import Select
 
+from base.selenium_test import AuthenticatedSeleniumTest
 from task.templatetags.task import more_natural_day
 from .day import Day
-from .models import TaskExecution, Task
+from .models import Task, TaskExecution
 
 
 class DayTest(TestCase):
@@ -546,3 +548,177 @@ class TaskTest(TestCase):
         self.assertIsInstance(
             task1.unscheduled_duration,
             Decimal)
+
+
+class OverviewTest(AuthenticatedSeleniumTest):
+    fixtures = ['user-data.json']
+
+    def test_new_task(self):
+        self.assertEqual(Task.objects.count(), 0)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_id('new_task_link').click()
+        name_input = self.selenium.find_element_by_id('new_task_name')
+        name_input.send_keys('Testtask')
+        duration_input = self.selenium.find_element_by_id('id_duration')
+        duration_input.clear()
+        duration_input.send_keys('42.2')
+        self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+
+        self.assertEqual(Task.objects.count(), 1)
+        task = Task.objects.first()
+        self.assertEqual(task.name, 'Testtask')
+        self.assertEqual(task.duration, Decimal('42.2'))
+
+    def test_schedule_task_for_today(self):
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        # create dummy task
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-schedule').click()
+        name_display = self.selenium.find_element_by_id('schedule_data_name')
+        self.assertEqual(
+            name_display.get_attribute('innerHTML'),
+            'Testtask')
+        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
+        self.assertEqual(
+            unscheduled_display.get_attribute('innerHTML'),
+            '5')
+        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        duration_input.clear()
+        duration_input.send_keys('1')
+        self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+
+        self.assertEqual(task.executions.count(), 1)
+        execution = task.executions.first()
+        self.assertEqual(execution.day, date.today())
+        self.assertEqual(execution.duration, Decimal(1))
+        self.assertFalse(execution.finished)
+
+    def test_schedule_task_for_tomorrow(self):
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        # create dummy task
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-schedule').click()
+        name_display = self.selenium.find_element_by_id('schedule_data_name')
+        self.assertEqual(
+            name_display.get_attribute('innerHTML'),
+            'Testtask')
+        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
+        self.assertEqual(
+            unscheduled_display.get_attribute('innerHTML'),
+            '5')
+        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        duration_input.clear()
+        duration_input.send_keys('1')
+        Select(self.selenium.find_element_by_id('schedule_for')).select_by_visible_text(
+            'Tomorrow')
+        self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+
+        self.assertEqual(task.executions.count(), 1)
+        execution = task.executions.first()
+        self.assertEqual(execution.day, date.today() + timedelta(days=1))
+        self.assertEqual(execution.duration, Decimal(1))
+        self.assertFalse(execution.finished)
+
+    def test_schedule_task_for_next_free_capacity(self):
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        # create dummy task
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        other_task = Task.objects.create(
+            user=self.user,
+            name='Placeholder Testtask',
+            duration=30)
+        # create task executions to fill current and next 2 days
+        TaskExecution.objects.bulk_create([
+            TaskExecution(
+                task=other_task, duration=10, day=date.today(), day_order=0),
+            TaskExecution(
+                task=other_task, duration=10, day=date.today() + timedelta(days=1), day_order=0),
+            TaskExecution(
+                task=other_task, duration=10, day=date.today() + timedelta(days=2), day_order=0)])
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-schedule').click()
+        name_display = self.selenium.find_element_by_id('schedule_data_name')
+        self.assertEqual(
+            name_display.get_attribute('innerHTML'),
+            'Testtask')
+        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
+        self.assertEqual(
+            unscheduled_display.get_attribute('innerHTML'),
+            '5')
+        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        duration_input.clear()
+        duration_input.send_keys('1')
+        Select(self.selenium.find_element_by_id('schedule_for')).select_by_visible_text(
+            'Next Free Capacity')
+        self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+
+        self.assertEqual(task.executions.count(), 1)
+        execution = task.executions.first()
+        self.assertEqual(execution.day, date.today() + timedelta(days=3))
+        self.assertEqual(execution.duration, Decimal(1))
+        self.assertFalse(execution.finished)
+
+    def test_schedule_task_for_another_time(self):
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        # create dummy task
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        other_task = Task.objects.create(
+            user=self.user,
+            name='Placeholder Testtask',
+            duration=30)
+        # create task executions to fill current and next 2 days
+        TaskExecution.objects.bulk_create([
+            TaskExecution(
+                task=other_task, duration=10, day=date.today(), day_order=0),
+            TaskExecution(
+                task=other_task, duration=10, day=date.today() + timedelta(days=1), day_order=0),
+            TaskExecution(
+                task=other_task, duration=10, day=date.today() + timedelta(days=2), day_order=0)])
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-schedule').click()
+        name_display = self.selenium.find_element_by_id('schedule_data_name')
+        self.assertEqual(
+            name_display.get_attribute('innerHTML'),
+            'Testtask')
+        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
+        self.assertEqual(
+            unscheduled_display.get_attribute('innerHTML'),
+            '5')
+        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        duration_input.clear()
+        duration_input.send_keys('1')
+        Select(self.selenium.find_element_by_id('schedule_for')).select_by_visible_text(
+            'Another Time')
+        date_input = self.selenium.find_element_by_id('schedule_for_date')
+        date_input.clear()
+        date_input.send_keys('2017-01-02')
+        self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+
+        self.assertEqual(task.executions.count(), 1)
+        execution = task.executions.first()
+        self.assertEqual(execution.day, date(2017, 1, 2))
+        self.assertEqual(execution.duration, Decimal(1))
+        self.assertFalse(execution.finished)
