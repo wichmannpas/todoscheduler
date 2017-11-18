@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 from freezegun import freeze_time
 from selenium.webdriver.support.ui import Select
@@ -845,3 +846,185 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(execution.day, date(2017, 1, 2))
         self.assertEqual(execution.duration, Decimal(1))
         self.assertFalse(execution.finished)
+
+    def test_task_execution_increase_time(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_css_selector('[data-tooltip="Takes 30 more minutes"]').click()
+
+        execution.refresh_from_db()
+        self.assertEqual(
+            execution.duration,
+            Decimal('2.5'))
+
+    def test_task_execution_decrease_time(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_css_selector('[data-tooltip="Takes 30 less minutes"]').click()
+
+        execution.refresh_from_db()
+        self.assertEqual(
+            execution.duration,
+            Decimal('1.5'))
+
+    def test_task_execution_finish(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_css_selector('[data-tooltip="Done"]').click()
+
+        execution.refresh_from_db()
+        self.assertTrue(execution.finished)
+
+    def test_task_execution_undo(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0,
+            finished=True)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_css_selector('[data-tooltip="Not done"]').click()
+
+        execution.refresh_from_db()
+        self.assertFalse(execution.finished)
+
+    def test_task_execution_delete(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0,
+            finished=True)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_css_selector('[data-tooltip="No time needed on this day"]').click()
+        alert = self.selenium.switch_to_alert()
+        alert.accept()
+        self.selenium.get(self.live_server_url)
+
+        self.assertRaises(ObjectDoesNotExist, execution.refresh_from_db)
+        task.refresh_from_db()
+        self.assertEqual(
+            task.duration,
+            Decimal(3))
+
+    def test_task_execution_postpone(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0,
+            finished=True)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_css_selector('[data-tooltip="Postpone to another day"]').click()
+
+        self.assertRaises(ObjectDoesNotExist, execution.refresh_from_db)
+        task.refresh_from_db()
+        self.assertEqual(
+            task.duration,
+            Decimal(5))
+
+    def test_task_execution_up(self):
+        task1 = Task.objects.create(
+            user=self.user,
+            name='Task 1',
+            duration=5)
+        execution1 = TaskExecution.objects.create(
+            day=date.today(),
+            task=task1,
+            duration=2,
+            day_order=0)
+        task2 = Task.objects.create(
+            user=self.user,
+            name='Task 2',
+            duration=5)
+        execution2 = TaskExecution.objects.create(
+            day=date.today(),
+            task=task2,
+            duration=1,
+            day_order=1)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_elements_by_css_selector('[data-tooltip="Needs time earlier"]')[1].click()
+
+        execution1.refresh_from_db()
+        execution2.refresh_from_db()
+        self.assertEqual(
+            execution1.day_order,
+            1)
+        self.assertEqual(
+            execution2.day_order,
+            0)
+
+    def test_task_execution_down(self):
+        task1 = Task.objects.create(
+            user=self.user,
+            name='Task 1',
+            duration=5)
+        execution1 = TaskExecution.objects.create(
+            day=date.today(),
+            task=task1,
+            duration=2,
+            day_order=0)
+        task2 = Task.objects.create(
+            user=self.user,
+            name='Task 2',
+            duration=5)
+        execution2 = TaskExecution.objects.create(
+            day=date.today(),
+            task=task2,
+            duration=1,
+            day_order=1)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_elements_by_css_selector('[data-tooltip="Needs time later"]')[0].click()
+
+        execution1.refresh_from_db()
+        execution2.refresh_from_db()
+        self.assertEqual(
+            execution1.day_order,
+            1)
+        self.assertEqual(
+            execution2.day_order,
+            0)
