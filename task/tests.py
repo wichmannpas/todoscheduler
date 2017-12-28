@@ -321,10 +321,16 @@ class TaskTest(TestCase):
             username='johndoe',
             email='a',
             workhours_weekday=Decimal(10),
-            workhours_weekend=Decimal(5))
+            workhours_weekend=Decimal(5),
+            default_schedule_duration=Decimal(1),
+            default_schedule_full_duration_max=Decimal(3),
+        )
         self.user2 = get_user_model().objects.create(
             username='foobar',
-            email='b')
+            email='b',
+            default_schedule_duration=Decimal(2),
+            default_schedule_full_duration_max=Decimal(5),
+        )
 
         self.weekdaydate1 = date(2017, 11, 6)
 
@@ -499,6 +505,66 @@ class TaskTest(TestCase):
         self.assertEqual(
             set(Task.unscheduled_tasks(self.user2)),
             set())
+
+    def test_default_schedule_duration(self):
+        task = Task.objects.create(
+            name='testtask',
+            user=self.user1,
+            duration=Decimal(42),
+        )
+        exec = TaskExecution.objects.create(
+            task=task,
+            day=self.weekdaydate1,
+            day_order=1,
+            duration=0,
+        )
+        exec.duration = Decimal(42) - Decimal(42)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(1))
+        exec.duration = Decimal(42) - Decimal(13)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(1))
+        exec.duration = Decimal(42) - Decimal(3)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(3))
+        exec.duration = Decimal(42) - Decimal('2.5')
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal('2.5'))
+        exec.duration = Decimal(42) - Decimal('1.5')
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal('1.5'))
+        exec.duration = Decimal(42) - Decimal('0.5')
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal('0.5'))
+        exec.duration = Decimal(42) - Decimal(0)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(0))
+
+        task.user = self.user2
+        exec.duration = Decimal(42) - Decimal(42)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(2))
+        exec.duration = Decimal(42) - Decimal(13)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(2))
+        exec.duration = Decimal(42) - Decimal(5)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(5))
+        exec.duration = Decimal(42) - Decimal(3)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(3))
+        exec.duration = Decimal(42) - Decimal('2.5')
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal('2.5'))
+        exec.duration = Decimal(42) - Decimal('1.5')
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal('1.5'))
+        exec.duration = Decimal(42) - Decimal('0.5')
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal('0.5'))
+        exec.duration = Decimal(42) - Decimal(0)
+        exec.save()
+        self.assertEqual(task.default_schedule_duration, Decimal(0))
 
     def test_free_capacity(self):
         self.assertEqual(

@@ -9,7 +9,9 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = (
             'name',
             'duration',
+            'default_schedule_duration',
         )
+    default_schedule_duration = serializers.DecimalField(max_digits=5, decimal_places=2)
 
 
 class TaskExecutionSerializer(serializers.ModelSerializer):
