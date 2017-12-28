@@ -88,6 +88,19 @@ class Task(models.Model):
             self.duration -
             (self.executions.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)))
 
+    @property
+    def default_schedule_duration(self) -> Decimal:
+        """
+        Get the duration that should be suggested for scheduling
+        based on the user preferences.
+        """
+        unscheduled_duration = self.unscheduled_duration
+        if (
+                unscheduled_duration <= self.user.default_schedule_full_duration_max or
+                unscheduled_duration <= self.user.default_schedule_duration):
+            return unscheduled_duration
+        return self.user.default_schedule_duration
+
     @staticmethod
     def unscheduled_tasks(user: get_user_model()):
         """Get all tasks which are not yet fully scheduled."""
