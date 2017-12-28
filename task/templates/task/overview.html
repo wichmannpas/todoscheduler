@@ -20,6 +20,26 @@
     </a>
   </p>
 
+  {% if missed_task_executions %}
+    <div class="toast toast-warning">
+      {% trans 'There are unfinished scheduled tasks for past days!' %}
+
+      <ul>
+        {% for execution in missed_task_executions %}
+          <li>
+            {{ execution.task.name }} ({{ execution.day }})
+            <a href="{% url 'task:finish_task_execution' execution.pk 'yes' %}"
+               class="tooltip" data-tooltip="{% trans 'Done' %}">
+              <span class="fa fa-check"></span></a>
+            <a href="{% url 'task:postpone_task_execution' execution.pk %}"
+               class="tooltip" data-tooltip="{% trans 'Postpone to another day' %}">
+              <span class="fa fa-clock-o"></span></a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
   {% if unscheduled_tasks %}
     <p>
       {% trans 'Some tasks are not fully scheduled yet!' %}
