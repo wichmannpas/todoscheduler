@@ -11,3 +11,8 @@ class User(AbstractUser):
         max_digits=4, decimal_places=2, default=8)
     workhours_weekend = models.DecimalField(
         max_digits=4, decimal_places=2, default=4)
+
+    default_schedule_duration = models.DecimalField(
+        max_digits=4, decimal_places=2, default=1)
+    default_schedule_full_duration_max = models.DecimalField(
+        max_digits=4, decimal_places=2, default=3)
