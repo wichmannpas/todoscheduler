@@ -54,7 +54,7 @@
     $('#schedule_data_name').text(task.data('taskName'));
     $('#schedule_data_unscheduled_duration').text(task.data('taskUnscheduledDuration'));
     $('#schedule_id').val(task.data('taskid'));
-    durationInput.val(task.data('taskUnscheduledDuration'));
+    durationInput.val(task.data('taskDefaultScheduleDuration'));
 
     $('#schedule').addClass('active');
     $('#schedule_for').val('today');
