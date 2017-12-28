@@ -7,7 +7,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import Sum, F, Max
+from django.db.models import Sum, F, Max, QuerySet
 from django.db.models.functions import Coalesce
 
 from .day import Day
@@ -143,6 +143,15 @@ class TaskExecution(models.Model):
     def past(self) -> bool:
         """Check wheter the execution lies in the past."""
         return self.day < date.today()
+
+    @staticmethod
+    def missed_task_executions(user: get_user_model()) -> QuerySet:
+        """Get all unfinished task executions scheduled for a past day."""
+        return TaskExecution.objects.filter(
+            task__user=user,
+            day__lt=date.today(),
+            finished=False
+        ).order_by('day').select_related('task')
 
     @staticmethod
     def schedule_by_day(

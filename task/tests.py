@@ -617,6 +617,103 @@ class TaskTest(TestCase):
             Decimal)
 
 
+class TaskExecutionTest(TestCase):
+    def setUp(self):
+        self.user1 = get_user_model().objects.create(
+            username='johndoe',
+            email='a',
+            workhours_weekday=Decimal(10),
+            workhours_weekend=Decimal(5),
+            default_schedule_duration=Decimal(1),
+            default_schedule_full_duration_max=Decimal(3),
+        )
+        self.user2 = get_user_model().objects.create(
+            username='foobar',
+            email='b',
+            default_schedule_duration=Decimal(2),
+            default_schedule_full_duration_max=Decimal(5),
+        )
+        self.weekdaydate1 = date(2017, 11, 6)
+
+    @freeze_time('2017-11-16')
+    def test_missed_task_executions(self):
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user1)),
+            [])
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user2)),
+            [])
+
+        task1 = Task.objects.create(
+            user=self.user1,
+            duration=Decimal(42))
+
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user1)),
+            [])
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user2)),
+            [])
+
+        TaskExecution.objects.create(
+            task=task1,
+            duration=1,
+            day=date(2018, 1, 1),
+            day_order=1,
+        )
+
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user1)),
+            [])
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user2)),
+            [])
+
+        exec2 = TaskExecution.objects.create(
+            task=task1,
+            duration=1,
+            day=date(2017, 1, 1),
+            day_order=1,
+        )
+
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user1)),
+            [exec2])
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user2)),
+            [])
+
+        exec3 = TaskExecution.objects.create(
+            task=task1,
+            duration=1,
+            day=date(2015, 5, 1),
+            day_order=1,
+        )
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user1)),
+            [exec3, exec2])
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user2)),
+            [])
+
+        exec3.finished = True
+        exec3.save(update_fields=('finished',))
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user1)),
+            [exec2])
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user2)),
+            [])
+        exec2.finished = True
+        exec2.save(update_fields=('finished',))
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user1)),
+            [])
+        self.assertListEqual(
+            list(TaskExecution.missed_task_executions(self.user2)),
+            [])
+
+
 class OverviewTest(AuthenticatedSeleniumTest):
     fixtures = ['user-data.json']
 
@@ -1094,3 +1191,46 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(
             execution2.day_order,
             0)
+
+    def test_missed_task_execution_finish(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today() - timedelta(days=4),
+            task=task,
+            duration=2,
+            day_order=0)
+
+        self.selenium.get(self.live_server_url)
+
+        self.assertIn(
+            'There are unfinished scheduled tasks for past days!',
+            self.selenium.page_source)
+
+        self.selenium.find_element_by_css_selector('[data-tooltip="Done"]').click()
+
+        execution.refresh_from_db()
+        self.assertTrue(execution.finished)
+
+    def test_missed_task_execution_postpone(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today() - timedelta(days=4),
+            task=task,
+            duration=2,
+            day_order=0)
+
+        self.selenium.get(self.live_server_url)
+
+        self.assertIn(
+            'There are unfinished scheduled tasks for past days!',
+            self.selenium.page_source)
+
+        self.selenium.find_element_by_css_selector('[data-tooltip="Postpone to another day"]').click()
+
+        self.assertRaises(ObjectDoesNotExist, execution.refresh_from_db)

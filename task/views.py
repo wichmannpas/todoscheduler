@@ -215,4 +215,5 @@ def overview(request: HttpRequest) -> HttpResponse:
             request.user, date.today() - timedelta(days=1), 7),
         'task_form': TaskForm(),
         'unscheduled_tasks': Task.unscheduled_tasks(request.user),
+        'missed_task_executions': TaskExecution.missed_task_executions(request.user),
     })
