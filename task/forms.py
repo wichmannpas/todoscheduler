@@ -1,6 +1,8 @@
 from datetime import date
+from decimal import Decimal
 
 from django import forms
+from django.core.validators import MinValueValidator
 from django.utils.translation import ugettext_lazy as _
 
 from .models import Task
@@ -19,7 +21,10 @@ class ScheduleForm(forms.Form):
         label=_('Schedule for date'), initial=date.today)
     duration = forms.DecimalField(
         label=_('Duration'),
-        max_digits=4, decimal_places=2)
+        max_digits=4, decimal_places=2,
+        validators=(
+            MinValueValidator(Decimal('0.01')),
+        ))
     task_id = forms.IntegerField(widget=forms.HiddenInput())
 
 
