@@ -748,6 +748,52 @@ class OverviewTest(AuthenticatedSeleniumTest):
 
         self.assertEqual(Task.objects.count(), 0)
 
+    def test_edit_task_duration_too_low(self):
+        """
+        Test that it is not possible to set the total duration of a task
+        to a value lower than the duration that is already scheduled.
+        """
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=1,
+            day_order=0,
+            finished=True)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-edit').click()
+        scheduled_display = self.selenium.find_element_by_id('edit_task_scheduled')
+        self.assertEqual(
+            scheduled_display.get_attribute('innerHTML'),
+            '3')
+        finished_display = self.selenium.find_element_by_id('edit_task_finished')
+        self.assertEqual(
+            finished_display.get_attribute('innerHTML'),
+            '1')
+        duration_input = self.selenium.find_element_by_id('edit_task_duration')
+        duration_input.clear()
+        duration_input.send_keys('1')  # invalid, 3 hours are already scheduled
+        self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+
+        self.assertIn(
+            'The task is invalid',
+            self.selenium.page_source)
+
+        task.refresh_from_db()
+        # the duration was not changed
+        self.assertEqual(
+            task.duration,
+            Decimal(5))
+
     def test_edit_task_duration_unscheduled(self):
         task = Task.objects.create(
             user=self.user,
