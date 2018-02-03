@@ -734,6 +734,20 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(task.name, 'Testtask')
         self.assertEqual(task.duration, Decimal('42.2'))
 
+    def test_new_task_invalid_duration(self):
+        self.assertEqual(Task.objects.count(), 0)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_id('new_task_link').click()
+        name_input = self.selenium.find_element_by_id('new_task_name')
+        name_input.send_keys('Testtask')
+        duration_input = self.selenium.find_element_by_id('id_duration')
+        duration_input.clear()
+        duration_input.send_keys('-42.2')  # invalid value!
+        self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+
+        self.assertEqual(Task.objects.count(), 0)
+
     def test_edit_task_duration_unscheduled(self):
         task = Task.objects.create(
             user=self.user,
@@ -1009,6 +1023,32 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(execution.day, date(2017, 1, 2))
         self.assertEqual(execution.duration, Decimal(1))
         self.assertFalse(execution.finished)
+
+    def test_schedule_task_invalid_duration(self):
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        # create dummy task
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+
+        self.selenium.get(self.live_server_url)
+        self.selenium.find_element_by_class_name('task-schedule').click()
+        name_display = self.selenium.find_element_by_id('schedule_data_name')
+        self.assertEqual(
+            name_display.get_attribute('innerHTML'),
+            'Testtask')
+        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
+        self.assertEqual(
+            unscheduled_display.get_attribute('innerHTML'),
+            '5')
+        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        duration_input.clear()
+        duration_input.send_keys('-1')
+        self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+
+        self.assertEqual(task.executions.count(), 0)
 
     def test_task_execution_increase_time(self):
         task = Task.objects.create(
