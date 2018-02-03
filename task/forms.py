@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from django import forms
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.utils.translation import ugettext_lazy as _
 
@@ -35,3 +36,12 @@ class TaskForm(forms.ModelForm):
             'name',
             'duration',
         )
+
+    def clean_duration(self):
+        duration = self.cleaned_data['duration']
+
+        if duration < self.instance.scheduled_duration:
+            raise ValidationError(
+                'the new duration is less than the duration already scheduled')
+
+        return duration
