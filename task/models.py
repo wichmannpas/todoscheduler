@@ -1,11 +1,12 @@
 from typing import List, Union
 
-from datetime import date, timedelta
-
 from collections import OrderedDict
+from datetime import date, timedelta
 from decimal import Decimal
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Sum, F, Max, QuerySet
 from django.db.models.functions import Coalesce
@@ -19,7 +20,10 @@ class Task(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tasks')
     name = models.CharField(max_length=40)
     duration = models.DecimalField(
-        max_digits=5, decimal_places=2, default=1)
+        max_digits=5, decimal_places=2, default=1,
+        validators=(
+            MinValueValidator(Decimal('0.01')),
+        ))
 
     def __str__(self) -> str:
         return '{}: {}'.format(self.user, self.name)
