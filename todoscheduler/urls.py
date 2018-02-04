@@ -25,5 +25,6 @@ urlpatterns = [
     url(r'^api/', include('api.urls')),
     url(r'^base/', include('base.urls')),
     url(r'^admin/', admin.site.urls),
-    url(r'^', include('task.urls')),
+    url(r'^task/', include('task.urls')),
+    url(r'^', include('client.urls')),
 ]
