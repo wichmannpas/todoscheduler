@@ -44,6 +44,7 @@ before_script:
 
 script:
   - flake8
+  - ./build_client
   - ./manage.py collectstatic --no-input
   - coverage run manage.py test
 
