@@ -4,6 +4,9 @@
 
 ## Build Setup
 
+In order to be able to use the vuejs dev server, it is recommended to follow both the following steps and the django development server setup described in the main README.
+In order to have the backend available from the vuejs dev server, a proxy like nginx could be used to pass the requests to the respective upstream.
+
 ``` bash
 # install dependencies
 npm install

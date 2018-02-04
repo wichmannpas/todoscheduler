@@ -37,6 +37,12 @@ Migrate the database:
 ./manage.py migrate
 ```
 
+Compile the client-side application:
+
+```
+./build_client
+```
+
 Run the development server (again, see the official documentation for production-suitable deployments):
 
 ```
