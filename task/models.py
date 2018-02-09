@@ -7,7 +7,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Sum, F, Max, QuerySet
 from django.db.models.functions import Coalesce
 
@@ -84,10 +84,10 @@ class Task(models.Model):
         return self.executions.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)
 
     @property
-    def unscheduled_duration(self) -> Decimal:
+    def incomplete_duration(self) -> Decimal:
         """Get the duration of this task which is not yet scheduled."""
-        if hasattr(self, 'unscheduled_duration_agg'):
-            return self.unscheduled_duration_agg
+        if hasattr(self, 'incomplete_duration_agg'):
+            return self.incomplete_duration_agg
         return (
             self.duration -
             (self.executions.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)))
@@ -98,23 +98,23 @@ class Task(models.Model):
         Get the duration that should be suggested for scheduling
         based on the user preferences.
         """
-        unscheduled_duration = self.unscheduled_duration
+        incomplete_duration = self.incomplete_duration
         if (
-                unscheduled_duration <= self.user.default_schedule_full_duration_max or
-                unscheduled_duration <= self.user.default_schedule_duration):
-            return unscheduled_duration
+                incomplete_duration <= self.user.default_schedule_full_duration_max or
+                incomplete_duration <= self.user.default_schedule_duration):
+            return incomplete_duration
         return self.user.default_schedule_duration
 
     @staticmethod
-    def unscheduled_tasks(user: get_user_model()):
+    def incomplete_tasks(user: get_user_model()):
         """Get all tasks which are not yet fully scheduled."""
         return user.tasks.annotate(
             scheduled_duration_agg=Coalesce(
                 Sum('executions__duration'),
                 0)).annotate(
-            unscheduled_duration_agg=F(
+            incomplete_duration_agg=F(
                 'duration') - F('scheduled_duration_agg')
-        ).filter(unscheduled_duration_agg__gt=0)
+        ).filter(incomplete_duration_agg__gt=0)
 
     @staticmethod
     def free_capacity(user: get_user_model(), day: date) -> Decimal:
@@ -133,7 +133,10 @@ class TaskExecution(models.Model):
     day = models.DateField()
     day_order = models.SmallIntegerField()
     duration = models.DecimalField(
-        max_digits=4, decimal_places=2, default=1)
+        max_digits=4, decimal_places=2, default=1,
+        validators=(
+            MinValueValidator(Decimal('0.01')),
+        ))
     finished = models.BooleanField(default=False)
 
     def __str__(self) -> str:
@@ -142,6 +145,23 @@ class TaskExecution(models.Model):
     def overdue(self) -> bool:
         """Check wheter the execution is overdue."""
         return self.past and not self.finished
+
+    def delete(self, postpone: bool = True):
+        """
+        Delete this task execution.
+
+        When not postponed, the duration of the task is reduced by the
+        duration of this task execution.
+        """
+        with transaction.atomic():
+            if not postpone:
+                task = self.task
+                task.duration -= self.duration
+                if task.duration <= 0:
+                    task.delete()
+                else:
+                    task.save(update_fields=('duration',))
+            super().delete()
 
     @property
     def past(self) -> bool:
