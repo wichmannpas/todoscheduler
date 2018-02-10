@@ -16,6 +16,13 @@ from .day import Day
 
 class Task(models.Model):
     """A task is a single job to do."""
+
+    VALID_SCHEDULE_SPECIAL_DATES = (
+        'today',
+        'tomorrow',
+        'next_free_capacity',
+    )
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tasks')
     name = models.CharField(max_length=40)
@@ -27,48 +34,6 @@ class Task(models.Model):
 
     def __str__(self) -> str:
         return '{}: {}'.format(self.user, self.name)
-
-    def schedule(self,
-                 schedule_for: str, schedule_for_date: date,
-                 duration: Decimal) -> Union[None, date]:
-        """
-        Schedule execution of this task.
-        Returns whether the chosen day had enough capacities.
-        """
-        if schedule_for == 'today':
-            day = date.today()
-        elif schedule_for == 'tomorrow':
-            day = date.today() + timedelta(days=1)
-        elif schedule_for == 'next_free_capacity':
-            if (duration > self.user.workhours_weekday and
-                    duration > self.user.workhours_weekend):
-                # does not fit in a single day
-                return None
-            day = None
-            today = date.today()
-            # TODO: aggregate this in the database!
-            for offset in range(90):
-                cur_day = today + timedelta(days=offset)
-                if Task.free_capacity(self.user, cur_day) >= duration:
-                    day = cur_day
-                    break
-            if day is None:
-                return None
-        elif schedule_for == 'another_time':
-            day = schedule_for_date
-        else:
-            raise ValueError('unknown schedule_for value: %s' % schedule_for)
-
-        day_order = (TaskExecution.objects.filter(
-            task__user=self.user,
-            day=day).aggregate(Max('day_order'))['day_order__max'] or 0) + 1
-        TaskExecution.objects.create(
-            task=self,
-            day=day,
-            day_order=day_order,
-            duration=duration)
-        # TODO: check day capacity
-        return day
 
     @property
     def finished_duration(self) -> Decimal:
@@ -105,6 +70,29 @@ class Task(models.Model):
             return incomplete_duration
         return self.user.default_schedule_duration
 
+    def get_day_for_scheduling(
+            self, special_date: str, duration: Decimal) -> Union[None, date]:
+        """
+        Get the day for a task execution by a special day string (i.e., 'today').
+        """
+        if special_date == 'today':
+            return date.today()
+        elif special_date == 'tomorrow':
+            return date.today() + timedelta(days=1)
+        elif special_date == 'next_free_capacity':
+            if (duration > self.user.workhours_weekday and
+                    duration > self.user.workhours_weekend):
+                # does not fit in a single day
+                return None
+            today = date.today()
+            # TODO: aggregate this in the database!
+            for offset in range(90):
+                cur_day = today + timedelta(days=offset)
+                if Task.free_capacity(self.user, cur_day) >= duration:
+                    return cur_day
+
+        raise ValueError('unknown special_date value: %s' % special_date)
+
     @staticmethod
     def incomplete_tasks(user: get_user_model()):
         """Get all tasks which are not yet fully scheduled."""
@@ -128,6 +116,7 @@ class Task(models.Model):
 
 class TaskExecution(models.Model):
     """An execution of a task."""
+
     task = models.ForeignKey(
         Task, on_delete=models.CASCADE, related_name='executions')
     day = models.DateField()
@@ -138,6 +127,13 @@ class TaskExecution(models.Model):
             MinValueValidator(Decimal('0.01')),
         ))
     finished = models.BooleanField(default=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.day_order is None and not self.pk and self.day and self.task:
+            self.day_order = TaskExecution.get_next_day_order(
+                self.task.user, self.day)
 
     def __str__(self) -> str:
         return '{}: {}'.format(self.task, self.day)
@@ -167,6 +163,13 @@ class TaskExecution(models.Model):
     def past(self) -> bool:
         """Check wheter the execution lies in the past."""
         return self.day < date.today()
+
+    @staticmethod
+    def get_next_day_order(user, day):
+        """Get the next day order for a specific day."""
+        return (TaskExecution.objects.filter(
+            task__user=user,
+            day=day).aggregate(Max('day_order'))['day_order__max'] or 0) + 1
 
     @staticmethod
     def missed_task_executions(user: get_user_model()) -> QuerySet:
