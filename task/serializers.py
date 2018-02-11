@@ -31,9 +31,14 @@ class TaskSerializer(serializers.ModelSerializer):
         validated_data = super().validate(data)
 
         if self.instance and self.instance.pk and 'duration' in validated_data:
-            if validated_data['duration'] < self.instance.scheduled_duration:
-                raise ValidationError(
-                    'the new duration is less than the scheduled duration.')
+            scheduled_duration = self.instance.scheduled_duration
+            if validated_data['duration'] < scheduled_duration:
+                raise ValidationError({
+                    'duration': 'the new duration (%f) is less than the '
+                                'scheduled duration (%f).' % (
+                                    validated_data['duration'],
+                                    scheduled_duration)
+                })
 
         return validated_data
 
