@@ -134,3 +134,4 @@ class TaskExecutionSerializer(serializers.ModelSerializer):
 class DaySerializer(serializers.Serializer):
     day = serializers.DateField()
     executions = TaskExecutionSerializer(many=True)
+    max_duration = serializers.DecimalField(max_digits=5, decimal_places=2)

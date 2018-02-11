@@ -50,3 +50,7 @@ class Day:
     @property
     def remaining_duration(self) -> Decimal:
         return self.scheduled_duration - self.finished_duration
+
+    @property
+    def overloaded(self) -> bool:
+        return self.scheduled_duration > self.max_duration
