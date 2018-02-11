@@ -29,6 +29,34 @@ export default {
           executions)
       }
     },
+    taskExecutionToExchange (state) {
+      return (execution, direction) => {
+        let dayString = formatDayString(execution.day)
+        let storedDay = state.days[dayString]
+        if (storedDay === undefined) {
+          return null
+        }
+
+        let exchange = null
+        for (let i = 0; i < storedDay.taskExecutions.length; i++) {
+          let other = storedDay.taskExecutions[i]
+
+          if (other.finished !== execution.finished) {
+            continue
+          }
+
+          if (exchange !== null &&
+              direction * exchange.dayOrder < direction * other.dayOrder) {
+            break
+          }
+
+          if (direction * other.dayOrder > direction * execution.dayOrder) {
+            exchange = other
+          }
+        }
+        return exchange
+      }
+    },
     missedTaskExecutions (state) {
       return state.missed
     }
