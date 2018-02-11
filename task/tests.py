@@ -385,6 +385,31 @@ class TaskViewTest(AuthenticatedApiTest):
             task.duration,
             Decimal(2))
 
+    def test_update_task_duration_to_scheduled(self):
+        """
+        Test setting the duration of a task to exactly the scheduled duration.
+        """
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(2))
+        TaskExecution.objects.create(
+            task=task,
+            day=date(2000, 1, 2),
+            day_order=0,
+            duration=Decimal('0.5'))
+        resp = self.client.patch('/api/tasks/task/{}/'.format(task.pk), {
+            'duration': '0.5',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.duration,
+            Decimal('0.5'))
+
     def test_get_task(self):
         """
         Test the retrieval of an existing task.
