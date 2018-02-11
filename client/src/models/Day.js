@@ -1,11 +1,11 @@
-import { format, isPast, isToday } from 'date-fns'
+import { isToday } from 'date-fns'
 import { Decimal } from 'decimal.js'
 
-import { naturalDay } from '@/utils.js'
+import { formatDayString, isPastDay, naturalDay } from '@/utils.js'
 
 function Day (day, maxDuration, taskExecutions) {
   this.day = day
-  this.dayString = format(day, 'YYYY-MM-DD')
+  this.dayString = formatDayString(day)
   maxDuration = Decimal(maxDuration)
   this.maxDuration = () => maxDuration
   this.taskExecutions = taskExecutions
@@ -28,7 +28,7 @@ Day.prototype.naturalDay = function () {
   return naturalDay(this.day)
 }
 Day.prototype.past = function () {
-  return isPast(new Date(format(this.day, 'YYYY-MM-DD') + 'T23:59:59'))
+  return isPastDay(this.day)
 }
 Day.prototype.today = function () {
   return isToday(this.day)
