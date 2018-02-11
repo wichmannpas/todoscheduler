@@ -64,10 +64,14 @@ export default {
     })
   },
   finishTaskExecution (store, execution, newState) {
-    axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {
-      finished: newState
-    }).then(function (response) {
-      store.dispatch('updateTaskExecution', response.data)
+    return new Promise(function (resolve, reject) {
+      axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {
+        finished: newState
+      }).then(function (response) {
+        store.dispatch('updateTaskExecution', response.data)
+
+        resolve()
+      })
     })
   }
 }

@@ -9,6 +9,9 @@
         { height: (execution.duration.toNumber() * 4).toString() + 'em' }
       ]">
     <strong>{{ execution.task.name }}</strong>
+    <span
+      v-if="loading"
+      class="loading loading-lg"></span>
     <span class="float-right">
       {{ execution.duration.toNumber() }}h
       <span v-if="execution.task.duration.toNumber() !== execution.duration.toNumber()">
@@ -103,6 +106,11 @@ export default {
   props: [
     'execution'
   ],
+  data: function () {
+    return {
+      loading: false
+    }
+  },
   methods: {
     changeExecutionDuration (delta) {
       console.log('updating')
@@ -118,10 +126,14 @@ export default {
       console.log('edit task')
     },
     finishExecution (newState) {
+      this.loading = true
       Api.finishTaskExecution(
         this.$store,
         this.execution,
-        newState)
+        newState).then(
+        () => {
+          this.loading = false
+        })
     },
     increaseTaskDuration (delta) {
       console.log('increase task')
