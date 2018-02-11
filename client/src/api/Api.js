@@ -1,27 +1,9 @@
 import axios from 'axios'
 
 export default {
-  getAuth () {
-    return new Promise(function (resolve, reject) {
-      let authToken = window.localStorage.getItem('authToken')
-      if (authToken === null) {
-        return resolve(false)
-      }
-      axios.defaults.headers.common['Authorization'] = 'Token ' + authToken
-
-      axios.get('/api/user/').then((response) => {
-        return resolve(true)
-      }).catch((error) => {
-        let response = error.response
-        if (response === null) {
-          return reject(error)
-        }
-        return resolve(false)
-      })
-    })
-  },
   login (username, password) {
     return new Promise(function (resolve, reject) {
+      delete axios.defaults.headers.common['Authorization']
       axios.post('/api/token-auth/', {
         username: username,
         password: password
@@ -43,6 +25,42 @@ export default {
             reject(Error('connection error'))
           }
         })
+    })
+  },
+  getAuth () {
+    return new Promise(function (resolve, reject) {
+      let authToken = window.localStorage.getItem('authToken')
+      if (authToken === null) {
+        return resolve(false)
+      }
+      axios.defaults.headers.common['Authorization'] = 'Token ' + authToken
+
+      axios.get('/api/user/').then((response) => {
+        return resolve(true)
+      }).catch((error) => {
+        let response = error.response
+        if (response === null) {
+          return reject(error)
+        }
+        return resolve(false)
+      })
+    })
+  },
+  getIncompleteTasks (store) {
+    axios.get('/api/tasks/task/?incomplete').then(function (response) {
+      store.commit('setIncompleteTasks', response.data)
+    })
+  },
+  getTaskExecutions (store) {
+    axios.get('/api/tasks/taskexecution/').then(function (response) {
+      for (let i = 0; i < response.data.length; i++) {
+        store.commit('setTaskExecutionsForDay', response.data[i])
+      }
+    })
+  },
+  getMissedTaskExecutions (store) {
+    axios.get('/api/tasks/taskexecution/?missed').then(function (response) {
+      store.commit('setMissedTaskExecutions', response.data)
     })
   }
 }
