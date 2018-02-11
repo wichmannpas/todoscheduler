@@ -150,7 +150,14 @@ export default {
         })
     },
     increaseTaskDuration (delta) {
-      console.log('increase task')
+      this.loading = true
+      Api.changeTaskDuration(
+        this.$store,
+        this.execution.task,
+        this.execution.task.duration.add(delta.toString())).then(
+        () => {
+          this.loading = false
+        })
     },
     moveExecution (delta) {
     },

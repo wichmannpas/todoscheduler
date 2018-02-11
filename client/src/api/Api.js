@@ -58,6 +58,18 @@ export default {
       }
     })
   },
+  changeTaskDuration (store, task, newDuration) {
+    return new Promise(function (resolve, reject) {
+      axios.patch('/api/tasks/task/' + task.id.toString() + '/', {
+        duration: newDuration
+      }).then(function (response) {
+        store.commit('updateTask', response.data)
+        store.dispatch('updateTaskInExecutions', response.data)
+
+        resolve()
+      })
+    })
+  },
   getMissedTaskExecutions (store) {
     axios.get('/api/tasks/taskexecution/?missed').then(function (response) {
       store.commit('setMissedTaskExecutions', response.data)
