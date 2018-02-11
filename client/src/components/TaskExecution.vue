@@ -65,16 +65,18 @@
           @click="moveExecution(-1)"
           class="tooltip tooltip-left"
           v-bind:class="[
-            { 'invisible': execution.finished }
+            { 'invisible': execution.finished },
+            { 'invisible': !canBeMovedUp }
           ]"
          data-tooltip="Needs time earlier">
         <span class="fa fa-arrow-up"></span>
       </a>
       <a
           @click="moveExecution(1)"
-          class="tooltip tooltip-left invisible{% endif %}"
+          class="tooltip tooltip-left"
           v-bind:class="[
-            { 'invisible': execution.finished }
+            { 'invisible': execution.finished },
+            { 'invisible': !canBeMovedDown }
           ]"
           data-tooltip="Needs time later">
         <span class="fa fa-arrow-down"></span>
@@ -109,6 +111,16 @@ export default {
   data: function () {
     return {
       loading: false
+    }
+  },
+  computed: {
+    canBeMovedUp () {
+      return this.$store.getters.taskExecutionToExchange(
+        this.execution, -1) !== null
+    },
+    canBeMovedDown () {
+      return this.$store.getters.taskExecutionToExchange(
+        this.execution, 1) !== null
     }
   },
   methods: {
@@ -159,7 +171,23 @@ export default {
           this.loading = false
         })
     },
-    moveExecution (delta) {
+    moveExecution (direction) {
+      let exchange = this.$store.getters.taskExecutionToExchange(
+        this.execution,
+        direction)
+      if (exchange === null) {
+        // nothing to exchange with
+        return
+      }
+
+      this.loading = true
+      Api.exchangeTaskExecution(
+        this.$store,
+        this.execution,
+        exchange).then(
+        () => {
+          this.loading = false
+        })
     },
     postponeExecution () {
       this.loading = true

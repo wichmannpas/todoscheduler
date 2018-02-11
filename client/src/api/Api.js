@@ -97,6 +97,19 @@ export default {
       })
     })
   },
+  exchangeTaskExecution (store, execution, exchange) {
+    return new Promise(function (resolve, reject) {
+      axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {
+        day_order: exchange.dayOrder
+      }).then(function (response) {
+        store.dispatch('updateTaskExecution', response.data)
+        exchange.dayOrder = execution.dayOrder
+        store.dispatch('updateTaskExecution', exchange)
+
+        resolve()
+      })
+    })
+  },
   finishTaskExecution (store, execution, newState) {
     return new Promise(function (resolve, reject) {
       axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {

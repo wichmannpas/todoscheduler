@@ -19,6 +19,9 @@ TaskExecution.prototype.naturalDay = function () {
 }
 
 function objectToTaskExecution (execution) {
+  if (execution instanceof TaskExecution) {
+    return execution
+  }
   return new TaskExecution(
     execution.id,
     objectToTask(execution.task),

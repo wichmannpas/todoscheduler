@@ -11,6 +11,9 @@ function Task (id, name, duration, incompleteDuration, scheduledDuration, finish
 }
 
 function objectToTask (task) {
+  if (task instanceof Task) {
+    return task
+  }
   return new Task(
     task.id,
     task.name,
