@@ -42,6 +42,10 @@ class TaskExecutionViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin,
         if not params.is_valid():
             return Response(params.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        if 'missed' in request.query_params:
+            return Response(self.serializer_class(
+                TaskExecution.missed_task_executions(request.user), many=True).data)
+
         return Response(
             DaySerializer(
                 TaskExecution.schedule_by_day(
