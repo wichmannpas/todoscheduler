@@ -27,6 +27,16 @@ class TaskSerializer(serializers.ModelSerializer):
     finished_duration = serializers.DecimalField(
         max_digits=5, decimal_places=2, read_only=True)
 
+    def validate(self, data):
+        validated_data = super().validate(data)
+
+        if self.instance and self.instance.pk and 'duration' in validated_data:
+            if validated_data['duration'] < self.instance.scheduled_duration:
+                raise ValidationError(
+                    'the new duration is less than the scheduled duration.')
+
+        return validated_data
+
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
