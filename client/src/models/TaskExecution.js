@@ -1,6 +1,7 @@
 import { Decimal } from 'decimal.js'
 
-import { naturalDay } from '@/utils.js'
+import { objectToTask } from '@/models/Task'
+import { isPastDay, naturalDay } from '@/utils'
 
 function TaskExecution (id, task, day, dayOrder, duration, finished) {
   this.id = id
@@ -10,10 +11,24 @@ function TaskExecution (id, task, day, dayOrder, duration, finished) {
   this.duration = Decimal(duration)
   this.finished = finished
 }
+TaskExecution.prototype.past = function () {
+  return isPastDay(this.day)
+}
 TaskExecution.prototype.naturalDay = function () {
   return naturalDay(this.day)
 }
 
+function objectToTaskExecution (execution) {
+  return new TaskExecution(
+    execution.id,
+    objectToTask(execution.task),
+    execution.day,
+    execution.day_order,
+    execution.duration,
+    execution.finished)
+}
+
 export {
+  objectToTaskExecution,
   TaskExecution
 }

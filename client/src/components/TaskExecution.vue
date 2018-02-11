@@ -96,6 +96,8 @@
 </template>
 
 <script>
+import Api from '@/api/Api'
+
 export default {
   name: 'TaskExecution',
   props: [
@@ -116,8 +118,10 @@ export default {
       console.log('edit task')
     },
     finishExecution (newState) {
-      console.log('finish')
-      console.log(newState)
+      Api.finishTaskExecution(
+        this.$store,
+        this.execution,
+        newState)
     },
     increaseTaskDuration (delta) {
       console.log('increase task')

@@ -62,5 +62,12 @@ export default {
     axios.get('/api/tasks/taskexecution/?missed').then(function (response) {
       store.commit('setMissedTaskExecutions', response.data)
     })
+  },
+  finishTaskExecution (store, execution, newState) {
+    axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {
+      finished: newState
+    }).then(function (response) {
+      store.dispatch('updateTaskExecution', response.data)
+    })
   }
 }

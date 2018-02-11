@@ -10,6 +10,7 @@
           v-bind:key="execution.id">
           {{ execution.task.name }} ({{ execution.naturalDay() }})
           <a
+              @click="finishExecution(execution)"
               class="tooltip"
               data-tooltip="Done">
             <span class="fa fa-check"></span></a>
@@ -33,6 +34,14 @@ export default {
   computed: {
     missedTaskExecutions () {
       return this.$store.getters.missedTaskExecutions
+    }
+  },
+  methods: {
+    finishExecution (execution) {
+      Api.finishTaskExecution(
+        this.$store,
+        execution,
+        true)
     }
   }
 }
