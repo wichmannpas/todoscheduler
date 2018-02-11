@@ -15,6 +15,7 @@
               data-tooltip="Done">
             <span class="fa fa-check"></span></a>
           <a
+              @click="postponeExecution(execution)"
               class="tooltip"
               data-tooltip="Postpone to another day">
             <span class="fa fa-clock-o"></span></a>
@@ -39,6 +40,12 @@ export default {
   methods: {
     finishExecution (execution) {
       Api.finishTaskExecution(
+        this.$store,
+        execution,
+        true)
+    },
+    postponeExecution (execution) {
+      Api.deleteTaskExecution(
         this.$store,
         execution,
         true)

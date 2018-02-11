@@ -22,7 +22,7 @@ Day.prototype.remainingDuration = function () {
   return this.scheduledDuration().sub(this.finishedDuration())
 }
 Day.prototype.overloaded = function () {
-  return this.remainingDuration < 0
+  return this.scheduledDuration().toNumber() > this.maxDuration().toNumber()
 }
 Day.prototype.naturalDay = function () {
   return naturalDay(this.day)

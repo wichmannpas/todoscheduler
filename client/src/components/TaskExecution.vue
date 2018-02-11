@@ -120,7 +120,14 @@ export default {
         return
       }
 
-      console.log('delete')
+      this.loading = true
+      Api.deleteTaskExecution(
+        this.$store,
+        this.execution,
+        false).then(
+        () => {
+          this.loading = false
+        })
     },
     editTask () {
       console.log('edit task')
@@ -141,7 +148,14 @@ export default {
     moveExecution (delta) {
     },
     postponeExecution () {
-      console.log('postponing')
+      this.loading = true
+      Api.deleteTaskExecution(
+        this.$store,
+        this.execution,
+        true).then(
+        () => {
+          this.loading = false
+        })
     }
   }
 }
