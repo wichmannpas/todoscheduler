@@ -1,6 +1,7 @@
 import Vue from 'vue'
 
 import { Day } from '@/models/Day'
+import { objectToTask } from '@/models/Task'
 import { objectToTaskExecution } from '@/models/TaskExecution'
 import { formatDayString, parseDayString } from '@/utils'
 
@@ -89,6 +90,37 @@ export default {
         let other = context.state.missed[i]
         if (other.id === execution.id) {
           Vue.delete(context.state.missed, i)
+          break
+        }
+      }
+    },
+    /**
+     * Update a task in all executions that reference it.
+     */
+    updateTaskInExecutions (context, payload) {
+      let task = objectToTask(payload)
+
+      // days
+      for (let dayString in context.state.days) {
+        if (!context.state.days.hasOwnProperty(dayString)) {
+          continue
+        }
+        let day = context.state.days[dayString]
+
+        for (let i = 0; i < day.taskExecutions.length; i++) {
+          let execution = day.taskExecutions[i]
+
+          if (execution.task.id === task.id) {
+            Vue.set(execution, 'task', task)
+          }
+        }
+      }
+
+      // missed
+      for (let i = 0; i < context.state.missed.length; i++) {
+        let execution = context.state.missed[i]
+        if (execution.task.id === task.id) {
+          Vue.set(execution, 'task', task)
           break
         }
       }
