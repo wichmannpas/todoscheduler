@@ -74,6 +74,17 @@ export default {
       })
     })
   },
+  changeTaskExecutionDuration (store, execution, newDuration) {
+    return new Promise(function (resolve, reject) {
+      axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {
+        duration: newDuration
+      }).then(function (response) {
+        store.dispatch('updateTaskExecution', response.data)
+
+        resolve()
+      })
+    })
+  },
   finishTaskExecution (store, execution, newState) {
     return new Promise(function (resolve, reject) {
       axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {

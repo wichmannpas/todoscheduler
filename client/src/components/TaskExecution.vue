@@ -80,16 +80,16 @@
         <span class="fa fa-arrow-down"></span>
       </a>
       <a
-          @click="changeExecutionDuration(-0.5)"
+          @click="changeExecutionDuration('-0.5')"
           class="tooltip tooltip-left"
           v-bind:class="[
-            { 'invisible': execution.duration <= 0.5 }
+            { 'invisible': execution.duration.toNumber() <= 0.5 }
           ]"
           data-tooltip="Takes 30 less minutes">
         <span class="fa fa-minus"></span>
       </a>
       <a
-          @click="changeExecutionDuration(-0.5)"
+          @click="changeExecutionDuration('0.5')"
           class="tooltip tooltip-left"
           data-tooltip="Takes 30 more minutes">
         <span class="fa fa-plus"></span>
@@ -113,7 +113,14 @@ export default {
   },
   methods: {
     changeExecutionDuration (delta) {
-      console.log('updating')
+      this.loading = true
+      Api.changeTaskExecutionDuration(
+        this.$store,
+        this.execution,
+        this.execution.duration.add(delta).toString()).then(
+        () => {
+          this.loading = false
+        })
     },
     deleteExecution () {
       if (!confirm('Are you sure that you want to delete this task execution?')) {
