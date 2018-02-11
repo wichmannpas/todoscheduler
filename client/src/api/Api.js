@@ -63,6 +63,17 @@ export default {
       store.commit('setMissedTaskExecutions', response.data)
     })
   },
+  deleteTaskExecution (store, execution, postpone) {
+    return new Promise(function (resolve, reject) {
+      axios.delete(
+        '/api/tasks/taskexecution/' + execution.id.toString() +
+        '/?postpone=' + (postpone ? '1' : '0')).then(function (response) {
+        store.dispatch('deleteTaskExecution', execution)
+
+        resolve()
+      })
+    })
+  },
   finishTaskExecution (store, execution, newState) {
     return new Promise(function (resolve, reject) {
       axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {

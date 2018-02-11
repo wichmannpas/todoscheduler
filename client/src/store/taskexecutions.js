@@ -60,16 +60,14 @@ export default {
   },
   actions: {
     /**
-     * Update a task execution.
+     * Delete a task execution.
      *
      * Iterate through all days to ensure it is deleted
      * from a previous day if the day has been changed.
      *
-     * Furthermore, missed is updated.
+     * Furthermore, delete it from missed.
      */
-    updateTaskExecution (context, payload) {
-      let execution = objectToTaskExecution(payload)
-
+    deleteTaskExecution (context, execution) {
       // days
       for (let dayString in context.state.days) {
         if (!context.state.days.hasOwnProperty(dayString)) {
@@ -85,6 +83,22 @@ export default {
           }
         }
       }
+
+      // missed
+      for (let i = 0; i < context.state.missed.length; i++) {
+        let other = context.state.missed[i]
+        if (other.id === execution.id) {
+          Vue.delete(context.state.missed, i)
+          break
+        }
+      }
+    },
+    updateTaskExecution (context, payload) {
+      let execution = objectToTaskExecution(payload)
+
+      context.dispatch('deleteTaskExecution', execution)
+
+      // days
       let day = context.state.days[formatDayString(execution.day)]
       // determine at which index to put this execution
       let index = 0
@@ -104,20 +118,7 @@ export default {
       day.taskExecutions.splice(index, 0, execution)
 
       // missed
-      let contained = false
-      for (let i = 0; i < context.state.missed.length; i++) {
-        let other = context.state.missed[i]
-        if (other.id === execution.id) {
-          contained = true
-          if (execution.finished) {
-            Vue.delete(context.state.missed, i)
-          } else {
-            Vue.set(context.state.missed, i, execution)
-          }
-          break
-        }
-      }
-      if (!contained && !execution.finished && execution.past()) {
+      if (!execution.finished && execution.past()) {
         context.commit('addMissedTaskExecution', execution)
       }
     }
