@@ -5,17 +5,10 @@
         Some tasks are not fully scheduled yet!
       </p>
       <ul>
-        <li v-for="task in incompleteTasks" v-bind:key="task.id">
-          {{ task.name }}
-          ({{ task.incompleteDuration.toNumber() }}h)
-
-          <a class="task-edit tooltip"
-              data-tooltip="Edit task">
-            <span class="fa fa-pencil"></span></a>
-          <a class="task-schedule tooltip"
-              data-tooltip="Schedule">
-            <span class="fa fa-play"></span></a>
-        </li>
+        <IncompleteTask
+          v-for="task in incompleteTasks"
+          v-bind:key="task.id"
+          v-bind:task="task" />
       </ul>
     </div>
   </div>
@@ -23,8 +16,13 @@
 
 <script>
 import Api from '@/api/Api'
+import IncompleteTask from '@/components/IncompleteTask'
 
 export default {
+  name: 'IncompleteTasks',
+  components: {
+    IncompleteTask
+  },
   created: function () {
     Api.getIncompleteTasks(this.$store)
   },

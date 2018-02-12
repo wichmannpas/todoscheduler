@@ -51,7 +51,12 @@ export default {
         let otherTask = state.incomplete[i]
 
         if (otherTask.id === task.id) {
-          Vue.set(state.incomplete, i, task)
+          if (task.incompleteDuration.toNumber() <= 0) {
+            // not incomplete anymore
+            Vue.delete(state.incomplete, i)
+          } else {
+            Vue.set(state.incomplete, i, task)
+          }
         }
       }
     }
