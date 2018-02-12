@@ -14,6 +14,9 @@ function TaskExecution (id, task, day, dayOrder, duration, finished) {
 TaskExecution.prototype.past = function () {
   return isPastDay(this.day)
 }
+TaskExecution.prototype.missed = function () {
+  return !this.finished && this.past()
+}
 TaskExecution.prototype.naturalDay = function () {
   return naturalDay(this.day)
 }

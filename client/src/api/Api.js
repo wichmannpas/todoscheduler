@@ -51,6 +51,26 @@ export default {
       store.dispatch('setIncompleteTasks', response.data)
     })
   },
+  scheduleTask (store, task, day, duration) {
+    return new Promise(function (resolve, reject) {
+      axios.post('/api/tasks/taskexecution/', {
+        task_id: task.id,
+        day: day,
+        duration: duration
+      }).then(function (response) {
+        if (response.status === 201) {
+          store.commit('updateTask', response.data.task)
+          store.dispatch('addTaskExecution', response.data)
+
+          resolve()
+        } else {
+          reject(response.data)
+        }
+      }).catch(function (error) {
+        reject(error.response.data)
+      })
+    })
+  },
   getTaskExecutions (store) {
     axios.get('/api/tasks/taskexecution/').then(function (response) {
       for (let i = 0; i < response.data.length; i++) {
@@ -97,7 +117,7 @@ export default {
       axios.delete(
         '/api/tasks/taskexecution/' + execution.id.toString() +
         '/?postpone=' + (postpone ? '1' : '0')).then(function (response) {
-        store.dispatch('deleteTaskExecution', execution)
+        store.commit('deleteTaskExecution', execution)
 
         resolve()
       })
