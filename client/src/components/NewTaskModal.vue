@@ -77,9 +77,6 @@ import Api from '@/api/Api'
 
 export default {
   name: 'NewTaskModal',
-  props: [
-    'modalActive'
-  ],
   data: function () {
     return {
       loading: false,
