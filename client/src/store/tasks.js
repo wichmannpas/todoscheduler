@@ -47,10 +47,12 @@ export default {
     updateTask (state, payload) {
       let task = objectToTask(payload)
 
+      let contained = false
       for (let i = 0; i < state.incomplete.length; i++) {
         let otherTask = state.incomplete[i]
 
         if (otherTask.id === task.id) {
+          contained = true
           if (task.incompleteDuration.toNumber() <= 0) {
             // not incomplete anymore
             Vue.delete(state.incomplete, i)
@@ -58,6 +60,10 @@ export default {
             Vue.set(state.incomplete, i, task)
           }
         }
+      }
+      if (!contained) {
+        let index = taskIndex(state.incomplete, task)
+        state.incomplete.splice(index, 0, task)
       }
     }
   },
