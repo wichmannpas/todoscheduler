@@ -1,5 +1,4 @@
 Django
-django-pipeline
 django-registration
 djangorestframework
 django_widget_tweaks

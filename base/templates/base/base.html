@@ -1,4 +1,4 @@
-{% load pipeline %}{% load static %}{% load i18n %}<!doctype html>
+{% load static %}{% load i18n %}<!doctype html>
 <html>
   <head>
     <meta name="charset" content="utf-8" />
@@ -9,7 +9,8 @@
     <title>TodoScheduler</title>
 
     {% block css %}
-      {% stylesheet 'base' %}
+      <link rel="stylesheet" href="{% static 'base/css/spectre.min.css' %}" type="text/css" />
+      <link rel="stylesheet" href="{% static 'base/css/font-awesome.min.css' %}" type="text/css" />
     {% endblock css %}
     {% block head %}{% endblock head %}
   </head>
@@ -35,9 +36,5 @@
           {% trans 'Imprint' %}</a>
       {% endif %}
     </div>
-
-    {% block js %}
-      {% javascript 'base' %}
-    {% endblock js %}
   </body>
 </html>
