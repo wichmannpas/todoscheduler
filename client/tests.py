@@ -1,23 +1,109 @@
-from django.test import TestCase
+from datetime import date, timedelta
+from decimal import Decimal
+from time import sleep
+from subprocess import call, DEVNULL
+
+from django.contrib.auth import get_user_model
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.management import call_command
+from rest_framework.authtoken.models import Token as AuthToken
+from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 
-from base.selenium_test import AuthenticatedSeleniumTest
+from task.models import Task, TaskExecution
+
+
+class SeleniumTest(StaticLiveServerTestCase):
+    @classmethod
+    def setUpClass(cls):
+        # TODO: we do not want to rebuild the application every time
+        call('./build_client', stdout=DEVNULL, stderr=DEVNULL)
+        super().setUpClass()
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+        cls.selenium = webdriver.Chrome(chrome_options=options)
+        cls.selenium.implicitly_wait(10)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.selenium.quit()
+        super().tearDownClass()
+
+
+class LoginPageTest(SeleniumTest):
+    """
+    Test the login page.
+    """
+    def test_login(self):
+        user = get_user_model().objects.create(
+            username='admin',
+            email='admin@localhost',
+            workhours_weekday=Decimal(8),
+            workhours_weekend=Decimal(4))
+        user.set_password('foobar123')
+        user.save()
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+
+        # hash-location is #/login now
+        self.assertIn(
+            'login',
+            self.selenium.current_url)
+
+        username_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Username"]')
+        username_input.send_keys('admin')
+        password_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Password"]')
+        password_input.send_keys('foobar123')
+        login_button = self.selenium.find_element_by_xpath(
+            '//input[@value="Login"]')
+        login_button.click()
+        sleep(0.5)
+
+        self.assertNotIn(
+            'login',
+            self.selenium.current_url)
+
+        self.assertIn(
+            'New Task',
+            self.selenium.find_element_by_tag_name('body').text)
+
+
+class AuthenticatedSeleniumTest(SeleniumTest):
+    def setUp(self):
+        self.user = get_user_model().objects.create(
+            username='admin',
+            email='admin@localhost',
+            workhours_weekday=Decimal(8),
+            workhours_weekend=Decimal(4))
+
+        self.selenium.get(self.live_server_url)
+        token, created = AuthToken.objects.get_or_create(user=self.user)
+        self.selenium.execute_script(
+            'window.localStorage.setItem("authToken", "{}")'.format(token))
 
 
 class OverviewTest(AuthenticatedSeleniumTest):
-    fixtures = ['user-data.json']
-
     def test_new_task(self):
         self.assertEqual(Task.objects.count(), 0)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_id('new_task_link').click()
-        name_input = self.selenium.find_element_by_id('new_task_name')
+        sleep(0.5)
+        new_task_link = self.selenium.find_element_by_link_text('New Task')
+        new_task_link.click()
+        sleep(0.1)
+        name_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Name"]')
         name_input.send_keys('Testtask')
-        duration_input = self.selenium.find_element_by_id('id_duration')
+        duration_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('42.2')
         self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        sleep(0.5)
 
         self.assertEqual(Task.objects.count(), 1)
         task = Task.objects.first()
@@ -28,14 +114,23 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(Task.objects.count(), 0)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_id('new_task_link').click()
-        name_input = self.selenium.find_element_by_id('new_task_name')
+        sleep(0.5)
+        new_task_link = self.selenium.find_element_by_link_text('New Task')
+        new_task_link.click()
+        sleep(0.1)
+        name_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Name"]')
         name_input.send_keys('Testtask')
-        duration_input = self.selenium.find_element_by_id('id_duration')
+        duration_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Duration"]')
         duration_input.clear()
-        duration_input.send_keys('-42.2')  # invalid value!
+        duration_input.send_keys('-42.2')
         self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        sleep(0.5)
 
+        self.assertIn(
+            'is-error',
+            duration_input.get_attribute('class'))
         self.assertEqual(Task.objects.count(), 0)
 
     def test_edit_task_duration_too_low(self):
@@ -60,23 +155,26 @@ class OverviewTest(AuthenticatedSeleniumTest):
             finished=True)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-edit').click()
-        scheduled_display = self.selenium.find_element_by_id('edit_task_scheduled')
-        self.assertEqual(
-            scheduled_display.get_attribute('innerHTML'),
-            '3')
-        finished_display = self.selenium.find_element_by_id('edit_task_finished')
-        self.assertEqual(
-            finished_display.get_attribute('innerHTML'),
-            '1')
-        duration_input = self.selenium.find_element_by_id('edit_task_duration')
+        sleep(0.5)
+        edit_task_link = self.selenium.find_elements_by_class_name('fa-pencil')[0]
+        edit_task_link.click()
+        sleep(0.1)
+        scheduled_display = self.selenium.find_element_by_xpath('//div[@class="content"]/p')
+        self.assertIn(
+            'Scheduled: 3h',
+            scheduled_display.get_attribute('innerHTML'))
+        self.assertIn(
+            '1h finished',
+            scheduled_display.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('1')  # invalid, 3 hours are already scheduled
         self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+        sleep(0.5)
 
         self.assertIn(
-            'The task is invalid',
-            self.selenium.page_source)
+            'is-error',
+            duration_input.get_attribute('class'))
 
         task.refresh_from_db()
         # the duration was not changed
@@ -84,7 +182,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
             task.duration,
             Decimal(5))
 
-    def test_edit_task_duration_unscheduled(self):
+    def test_edit_task_duration_incomplete(self):
         task = Task.objects.create(
             user=self.user,
             name='Testtask',
@@ -102,19 +200,22 @@ class OverviewTest(AuthenticatedSeleniumTest):
             finished=True)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-edit').click()
-        scheduled_display = self.selenium.find_element_by_id('edit_task_scheduled')
-        self.assertEqual(
-            scheduled_display.get_attribute('innerHTML'),
-            '3')
-        finished_display = self.selenium.find_element_by_id('edit_task_finished')
-        self.assertEqual(
-            finished_display.get_attribute('innerHTML'),
-            '1')
-        duration_input = self.selenium.find_element_by_id('edit_task_duration')
+        sleep(0.5)
+        edit_task_link = self.selenium.find_elements_by_class_name('fa-pencil')[0]
+        edit_task_link.click()
+        sleep(0.1)
+        scheduled_display = self.selenium.find_element_by_xpath('//div[@class="content"]/p')
+        self.assertIn(
+            'Scheduled: 3h',
+            scheduled_display.get_attribute('innerHTML'))
+        self.assertIn(
+            '1h finished',
+            scheduled_display.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('42')
         self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+        sleep(0.5)
 
         task.refresh_from_db()
         self.assertEqual(
@@ -124,7 +225,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
             task.duration,
             Decimal(42))
 
-    def test_edit_task_name_unscheduled(self):
+    def test_edit_task_name_incomplete(self):
         task = Task.objects.create(
             user=self.user,
             name='Testtask',
@@ -142,19 +243,22 @@ class OverviewTest(AuthenticatedSeleniumTest):
             finished=True)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-edit').click()
-        scheduled_display = self.selenium.find_element_by_id('edit_task_scheduled')
-        self.assertEqual(
-            scheduled_display.get_attribute('innerHTML'),
-            '3')
-        finished_display = self.selenium.find_element_by_id('edit_task_finished')
-        self.assertEqual(
-            finished_display.get_attribute('innerHTML'),
-            '1')
-        name_input = self.selenium.find_element_by_id('edit_task_name')
+        sleep(0.5)
+        edit_task_link = self.selenium.find_elements_by_class_name('fa-pencil')[0]
+        edit_task_link.click()
+        sleep(0.1)
+        scheduled_display = self.selenium.find_element_by_xpath('//div[@class="content"]/p')
+        self.assertIn(
+            'Scheduled: 3h',
+            scheduled_display.get_attribute('innerHTML'))
+        self.assertIn(
+            '1h finished',
+            scheduled_display.get_attribute('innerHTML'))
+        name_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Name"]')
         name_input.clear()
         name_input.send_keys('Edited Task')
         self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+        sleep(0.5)
 
         task.refresh_from_db()
         self.assertEqual(
@@ -164,7 +268,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
             task.duration,
             Decimal(5))
 
-    def test_edit_task_name_duration_unscheduled(self):
+    def test_edit_task_name_duration_incomplete(self):
         task = Task.objects.create(
             user=self.user,
             name='Testtask',
@@ -182,22 +286,25 @@ class OverviewTest(AuthenticatedSeleniumTest):
             finished=True)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-edit').click()
-        scheduled_display = self.selenium.find_element_by_id('edit_task_scheduled')
-        self.assertEqual(
-            scheduled_display.get_attribute('innerHTML'),
-            '3')
-        finished_display = self.selenium.find_element_by_id('edit_task_finished')
-        self.assertEqual(
-            finished_display.get_attribute('innerHTML'),
-            '1')
-        name_input = self.selenium.find_element_by_id('edit_task_name')
+        sleep(0.5)
+        edit_task_link = self.selenium.find_elements_by_class_name('fa-pencil')[0]
+        edit_task_link.click()
+        sleep(0.1)
+        scheduled_display = self.selenium.find_element_by_xpath('//div[@class="content"]/p')
+        self.assertIn(
+            'Scheduled: 3h',
+            scheduled_display.get_attribute('innerHTML'))
+        self.assertIn(
+            '1h finished',
+            scheduled_display.get_attribute('innerHTML'))
+        name_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Name"]')
         name_input.clear()
         name_input.send_keys('Edited Task')
-        duration_input = self.selenium.find_element_by_id('edit_task_duration')
+        duration_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('42')
         self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+        sleep(0.5)
 
         task.refresh_from_db()
         self.assertEqual(
@@ -217,19 +324,23 @@ class OverviewTest(AuthenticatedSeleniumTest):
             duration=5)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-schedule').click()
-        name_display = self.selenium.find_element_by_id('schedule_data_name')
-        self.assertEqual(
-            name_display.get_attribute('innerHTML'),
-            'Testtask')
-        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
-        self.assertEqual(
-            unscheduled_display.get_attribute('innerHTML'),
-            '5')
-        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        sleep(0.5)
+        schedule_link = self.selenium.find_element_by_xpath('//a[@data-tooltip="Schedule"]')
+        schedule_link.click()
+        sleep(0.1)
+        modal_body = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]')
+        self.assertIn(
+            'Testtask',
+            modal_body.get_attribute('innerHTML'))
+        self.assertIn(
+            '5h',
+            modal_body.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('1')
         self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+        sleep(0.5)
 
         self.assertEqual(task.executions.count(), 1)
         execution = task.executions.first()
@@ -247,21 +358,26 @@ class OverviewTest(AuthenticatedSeleniumTest):
             duration=5)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-schedule').click()
-        name_display = self.selenium.find_element_by_id('schedule_data_name')
-        self.assertEqual(
-            name_display.get_attribute('innerHTML'),
-            'Testtask')
-        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
-        self.assertEqual(
-            unscheduled_display.get_attribute('innerHTML'),
-            '5')
-        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        sleep(0.5)
+        schedule_link = self.selenium.find_element_by_xpath('//a[@data-tooltip="Schedule"]')
+        schedule_link.click()
+        sleep(0.1)
+        modal_body = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]')
+        self.assertIn(
+            'Testtask',
+            modal_body.get_attribute('innerHTML'))
+        self.assertIn(
+            '5h',
+            modal_body.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('1')
-        Select(self.selenium.find_element_by_id('schedule_for')).select_by_visible_text(
+        schedule_for = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]//select')
+        Select(schedule_for).select_by_visible_text(
             'Tomorrow')
         self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+        sleep(0.5)
 
         self.assertEqual(task.executions.count(), 1)
         execution = task.executions.first()
@@ -291,21 +407,26 @@ class OverviewTest(AuthenticatedSeleniumTest):
                 task=other_task, duration=10, day=date.today() + timedelta(days=2), day_order=0)])
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-schedule').click()
-        name_display = self.selenium.find_element_by_id('schedule_data_name')
-        self.assertEqual(
-            name_display.get_attribute('innerHTML'),
-            'Testtask')
-        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
-        self.assertEqual(
-            unscheduled_display.get_attribute('innerHTML'),
-            '5')
-        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        sleep(0.5)
+        schedule_link = self.selenium.find_element_by_xpath('//a[@data-tooltip="Schedule"]')
+        schedule_link.click()
+        sleep(0.1)
+        modal_body = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]')
+        self.assertIn(
+            'Testtask',
+            modal_body.get_attribute('innerHTML'))
+        self.assertIn(
+            '5h',
+            modal_body.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('1')
-        Select(self.selenium.find_element_by_id('schedule_for')).select_by_visible_text(
+        schedule_for = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]//select')
+        Select(schedule_for).select_by_visible_text(
             'Next Free Capacity')
         self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+        sleep(0.5)
 
         self.assertEqual(task.executions.count(), 1)
         execution = task.executions.first()
@@ -321,38 +442,32 @@ class OverviewTest(AuthenticatedSeleniumTest):
             user=self.user,
             name='Testtask',
             duration=5)
-        other_task = Task.objects.create(
-            user=self.user,
-            name='Placeholder Testtask',
-            duration=30)
-        # create task executions to fill current and next 2 days
-        TaskExecution.objects.bulk_create([
-            TaskExecution(
-                task=other_task, duration=10, day=date.today(), day_order=0),
-            TaskExecution(
-                task=other_task, duration=10, day=date.today() + timedelta(days=1), day_order=0),
-            TaskExecution(
-                task=other_task, duration=10, day=date.today() + timedelta(days=2), day_order=0)])
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-schedule').click()
-        name_display = self.selenium.find_element_by_id('schedule_data_name')
-        self.assertEqual(
-            name_display.get_attribute('innerHTML'),
-            'Testtask')
-        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
-        self.assertEqual(
-            unscheduled_display.get_attribute('innerHTML'),
-            '5')
-        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        sleep(0.5)
+        schedule_link = self.selenium.find_element_by_xpath('//a[@data-tooltip="Schedule"]')
+        schedule_link.click()
+        sleep(0.1)
+        modal_body = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]')
+        self.assertIn(
+            'Testtask',
+            modal_body.get_attribute('innerHTML'))
+        self.assertIn(
+            '5h',
+            modal_body.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('1')
-        Select(self.selenium.find_element_by_id('schedule_for')).select_by_visible_text(
+        schedule_for = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]//select')
+        Select(schedule_for).select_by_visible_text(
             'Another Time')
-        date_input = self.selenium.find_element_by_id('schedule_for_date')
+        date_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Schedule for date"]')
         date_input.clear()
         date_input.send_keys('2017-01-02')
         self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+        sleep(0.5)
 
         self.assertEqual(task.executions.count(), 1)
         execution = task.executions.first()
@@ -370,19 +485,28 @@ class OverviewTest(AuthenticatedSeleniumTest):
             duration=5)
 
         self.selenium.get(self.live_server_url)
-        self.selenium.find_element_by_class_name('task-schedule').click()
-        name_display = self.selenium.find_element_by_id('schedule_data_name')
-        self.assertEqual(
-            name_display.get_attribute('innerHTML'),
-            'Testtask')
-        unscheduled_display = self.selenium.find_element_by_id('schedule_data_unscheduled_duration')
-        self.assertEqual(
-            unscheduled_display.get_attribute('innerHTML'),
-            '5')
-        duration_input = self.selenium.find_element_by_id('schedule_duration')
+        sleep(0.5)
+        schedule_link = self.selenium.find_element_by_xpath('//a[@data-tooltip="Schedule"]')
+        schedule_link.click()
+        sleep(0.1)
+        modal_body = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]')
+        self.assertIn(
+            'Testtask',
+            modal_body.get_attribute('innerHTML'))
+        self.assertIn(
+            '5h',
+            modal_body.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('-1')
+        schedule_for = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]//select')
         self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+        sleep(0.5)
+
+        self.assertIn(
+            'is-error',
+            duration_input.get_attribute('class'))
 
         self.assertEqual(task.executions.count(), 0)
 
@@ -398,7 +522,9 @@ class OverviewTest(AuthenticatedSeleniumTest):
             day_order=0)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
         self.selenium.find_element_by_css_selector('[data-tooltip="Takes 30 more minutes"]').click()
+        sleep(0.5)
 
         execution.refresh_from_db()
         self.assertEqual(
@@ -417,7 +543,9 @@ class OverviewTest(AuthenticatedSeleniumTest):
             day_order=0)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
         self.selenium.find_element_by_css_selector('[data-tooltip="Takes 30 less minutes"]').click()
+        sleep(0.5)
 
         execution.refresh_from_db()
         self.assertEqual(
@@ -436,7 +564,9 @@ class OverviewTest(AuthenticatedSeleniumTest):
             day_order=0)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
         self.selenium.find_element_by_css_selector('[data-tooltip="Done"]').click()
+        sleep(0.5)
 
         execution.refresh_from_db()
         self.assertTrue(execution.finished)
@@ -454,7 +584,9 @@ class OverviewTest(AuthenticatedSeleniumTest):
             finished=True)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
         self.selenium.find_element_by_css_selector('[data-tooltip="Not done"]').click()
+        sleep(0.5)
 
         execution.refresh_from_db()
         self.assertFalse(execution.finished)
@@ -472,10 +604,11 @@ class OverviewTest(AuthenticatedSeleniumTest):
             finished=True)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
         self.selenium.find_element_by_css_selector('[data-tooltip="No time needed on this day"]').click()
         alert = self.selenium.switch_to_alert()
         alert.accept()
-        self.selenium.get(self.live_server_url)
+        sleep(0.5)
 
         self.assertRaises(ObjectDoesNotExist, execution.refresh_from_db)
         task.refresh_from_db()
@@ -496,7 +629,9 @@ class OverviewTest(AuthenticatedSeleniumTest):
             finished=True)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
         self.selenium.find_element_by_css_selector('[data-tooltip="Postpone to another day"]').click()
+        sleep(0.5)
 
         self.assertRaises(ObjectDoesNotExist, execution.refresh_from_db)
         task.refresh_from_db()
@@ -525,7 +660,9 @@ class OverviewTest(AuthenticatedSeleniumTest):
             day_order=1)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
         self.selenium.find_elements_by_css_selector('[data-tooltip="Needs time earlier"]')[1].click()
+        sleep(0.5)
 
         execution1.refresh_from_db()
         execution2.refresh_from_db()
@@ -557,7 +694,9 @@ class OverviewTest(AuthenticatedSeleniumTest):
             day_order=1)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
         self.selenium.find_elements_by_css_selector('[data-tooltip="Needs time later"]')[0].click()
+        sleep(0.5)
 
         execution1.refresh_from_db()
         execution2.refresh_from_db()
@@ -580,12 +719,14 @@ class OverviewTest(AuthenticatedSeleniumTest):
             day_order=0)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
 
         self.assertIn(
             'There are unfinished scheduled tasks for past days!',
-            self.selenium.page_source)
+            self.selenium.find_element_by_tag_name('body').get_attribute('innerHTML'))
 
         self.selenium.find_element_by_css_selector('[data-tooltip="Done"]').click()
+        sleep(0.5)
 
         execution.refresh_from_db()
         self.assertTrue(execution.finished)
@@ -602,13 +743,13 @@ class OverviewTest(AuthenticatedSeleniumTest):
             day_order=0)
 
         self.selenium.get(self.live_server_url)
+        sleep(0.5)
 
         self.assertIn(
             'There are unfinished scheduled tasks for past days!',
             self.selenium.page_source)
 
         self.selenium.find_element_by_css_selector('[data-tooltip="Postpone to another day"]').click()
+        sleep(0.5)
 
         self.assertRaises(ObjectDoesNotExist, execution.refresh_from_db)
-
-# TODO: missed task executions
