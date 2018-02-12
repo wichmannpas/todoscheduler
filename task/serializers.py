@@ -73,8 +73,11 @@ class DayOrScheduleField(serializers.DateField):
             except ArithmeticError:
                 return super().to_internal_value(data)
 
-            return task.get_day_for_scheduling(
+            day = task.get_day_for_scheduling(
                 data, duration)
+            if day is None:
+                raise ValidationError('no free capacity found in the near future')
+            return day
 
         return super().to_internal_value(data)
 
