@@ -184,6 +184,8 @@ export default {
         finished: newState
       }).then(function (response) {
         store.dispatch('updateTaskExecution', response.data)
+        store.commit('updateTask', response.data.task)
+        store.dispatch('updateTaskInExecutions', response.data.task)
 
         resolve()
       })
