@@ -135,7 +135,15 @@ export default {
     addTaskExecutionToDay (state, payload) {
       let execution = objectToTaskExecution(payload)
 
-      let day = state.days[formatDayString(execution.day)]
+      let dayString = formatDayString(execution.day)
+      let day = state.days[dayString]
+      if (day === undefined) {
+        console.warn(
+          'not adding task execution ' + execution.id.toString() +
+          ' to store because day ' + dayString + ' is not yet known')
+        return
+      }
+
       let index = taskExecutionIndex(day.taskExecutions, execution)
       day.taskExecutions.splice(index, 0, execution)
     },
