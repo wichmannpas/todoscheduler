@@ -99,6 +99,25 @@ export default {
       })
     })
   },
+  updateTask (store, task) {
+    return new Promise(function (resolve, reject) {
+      axios.put('/api/tasks/task/' + task.id.toString() + '/', {
+        name: task.name,
+        duration: task.duration
+      }).then(function (response) {
+        if (response.status === 200) {
+          store.commit('updateTask', response.data)
+          store.dispatch('updateTaskInExecutions', response.data)
+          resolve()
+        } else {
+          reject(response.data)
+        }
+      }).catch(function (error) {
+        console.error(error)
+        reject(error.response.data)
+      })
+    })
+  },
   changeTaskDuration (store, task, newDuration) {
     return new Promise(function (resolve, reject) {
       axios.patch('/api/tasks/task/' + task.id.toString() + '/', {

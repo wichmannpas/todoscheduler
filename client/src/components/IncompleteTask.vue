@@ -3,17 +3,24 @@
     {{ task.name }}
     ({{ task.incompleteDuration().toNumber() }}h)
 
+    <EditTaskModal
+        @close="editModalActive = false"
+        v-if="editModalActive"
+        v-bind:task="task"
+    />
+
     <ScheduleTaskModal
-        @close="modalActive = false"
-        v-if="modalActive"
+        @close="scheduleModalActive = false"
+        v-if="scheduleModalActive"
         v-bind:task="task"
     />
 
     <a class="task-edit tooltip"
+        @click="editModalActive = true"
         data-tooltip="Edit task">
       <span class="fa fa-pencil"></span></a>
     <a
-        @click="modalActive = true"
+        @click="scheduleModalActive = true"
         class="task-schedule tooltip"
         data-tooltip="Schedule">
       <span class="fa fa-play"></span></a>
@@ -21,6 +28,7 @@
 </template>
 
 <script>
+import EditTaskModal from '@/components/EditTaskModal'
 import ScheduleTaskModal from '@/components/ScheduleTaskModal'
 
 export default {
@@ -30,10 +38,12 @@ export default {
   ],
   data: function () {
     return {
-      modalActive: false
+      editModalActive: false,
+      scheduleModalActive: false
     }
   },
   components: {
+    EditTaskModal,
     ScheduleTaskModal
   }
 }
