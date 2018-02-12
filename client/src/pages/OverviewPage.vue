@@ -1,5 +1,7 @@
 <template>
   <div class="overview">
+    <NewTask />
+
     <MissedTaskExecutions />
 
     <IncompleteTasks />
@@ -11,11 +13,13 @@
 import Api from '@/api/Api'
 import IncompleteTasks from '@/components/IncompleteTasks'
 import MissedTaskExecutions from '@/components/MissedTaskExecutions'
+import NewTask from '@/components/NewTask'
 import Schedule from '@/components/Schedule'
 
 export default {
   name: 'OverviewPage',
   components: {
+    NewTask,
     IncompleteTasks,
     MissedTaskExecutions,
     Schedule

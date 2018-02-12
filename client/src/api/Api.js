@@ -58,6 +58,23 @@ export default {
       }
     })
   },
+  createTask (store, task) {
+    return new Promise(function (resolve, reject) {
+      axios.post('/api/tasks/task/', {
+        name: task.name,
+        duration: task.duration
+      }).then(function (response) {
+        if (response.status === 201) {
+          store.commit('addIncompleteTask', response.data)
+          resolve()
+        } else {
+          reject(response.data)
+        }
+      }).catch(function (error) {
+        reject(error.response.data)
+      })
+    })
+  },
   changeTaskDuration (store, task, newDuration) {
     return new Promise(function (resolve, reject) {
       axios.patch('/api/tasks/task/' + task.id.toString() + '/', {
