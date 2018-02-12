@@ -53,7 +53,7 @@
         <span class="fa fa-files-o"></span>
       </a>
       <a
-          @click="editTask()"
+          @click="editModalActive = true"
           class="
             task-edit
             tooltip tooltip-right"
@@ -97,20 +97,30 @@
         <span class="fa fa-plus"></span>
       </a>
     </span>
+    <EditTaskModal
+        @close="editModalActive = false"
+        v-if="editModalActive"
+        v-bind:task="execution.task"
+    />
   </span>
 </template>
 
 <script>
 import Api from '@/api/Api'
+import EditTaskModal from '@/components/EditTaskModal'
 
 export default {
   name: 'TaskExecution',
+  components: {
+    EditTaskModal
+  },
   props: [
     'execution'
   ],
   data: function () {
     return {
-      loading: false
+      loading: false,
+      editModalActive: false
     }
   },
   computed: {
@@ -147,9 +157,6 @@ export default {
         () => {
           this.loading = false
         })
-    },
-    editTask () {
-      console.log('edit task')
     },
     finishExecution (newState) {
       this.loading = true
