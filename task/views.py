@@ -15,9 +15,9 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if 'incomplete' in self.request.query_params:
-            return Task.incomplete_tasks(self.request.user)
+            return Task.incomplete_tasks(self.request.user).order_by('name')
 
-        return self.request.user.tasks.all()
+        return self.request.user.tasks.all().order_by('name')
 
 
 class TaskExecutionViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin,
