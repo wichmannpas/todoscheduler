@@ -8,7 +8,6 @@
     <NewTaskModal
         @close="modalActive = false"
         v-if="modalActive"
-        v-bind:modalActive="modalActive"
     />
   </div>
 </template>
