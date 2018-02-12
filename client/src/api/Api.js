@@ -14,6 +14,7 @@ export default {
           resolve()
         }).catch(
         function (error) {
+          console.error(error)
           let response = error.response
           let statusCode
           if (response !== undefined) {
@@ -38,6 +39,7 @@ export default {
       axios.get('/api/user/').then((response) => {
         return resolve(true)
       }).catch((error) => {
+        console.error(error)
         let response = error.response
         if (response === null) {
           return reject(error)
@@ -67,6 +69,7 @@ export default {
           reject(response.data)
         }
       }).catch(function (error) {
+        console.error(error)
         reject(error.response.data)
       })
     })
@@ -91,6 +94,7 @@ export default {
           reject(response.data)
         }
       }).catch(function (error) {
+        console.error(error)
         reject(error.response.data)
       })
     })
