@@ -122,6 +122,12 @@ export default {
         '/api/tasks/taskexecution/' + execution.id.toString() +
         '/?postpone=' + (postpone ? '1' : '0')).then(function (response) {
         store.commit('deleteTaskExecution', execution)
+        if (postpone) {
+          let task = execution.task
+          task.scheduledDuration = task.scheduledDuration.sub(execution.duration)
+          store.commit('updateTask', task)
+          store.dispatch('updateTaskInExecutions', task)
+        }
 
         resolve()
       })
@@ -133,6 +139,8 @@ export default {
         duration: newDuration
       }).then(function (response) {
         store.dispatch('updateTaskExecution', response.data)
+        store.commit('updateTask', response.data.task)
+        store.dispatch('updateTaskInExecutions', response.data.task)
 
         resolve()
       })
