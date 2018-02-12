@@ -48,7 +48,7 @@ export default {
   },
   getIncompleteTasks (store) {
     axios.get('/api/tasks/task/?incomplete').then(function (response) {
-      store.commit('setIncompleteTasks', response.data)
+      store.dispatch('setIncompleteTasks', response.data)
     })
   },
   getTaskExecutions (store) {
