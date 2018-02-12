@@ -53,7 +53,7 @@ export default {
 
         if (otherTask.id === task.id) {
           contained = true
-          if (task.incompleteDuration.toNumber() <= 0) {
+          if (task.incompleteDuration().toNumber() <= 0) {
             // not incomplete anymore
             Vue.delete(state.incomplete, i)
           } else {

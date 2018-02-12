@@ -1,7 +1,7 @@
 <template>
   <li>
     {{ task.name }}
-    ({{ task.incompleteDuration.toNumber() }}h)
+    ({{ task.incompleteDuration().toNumber() }}h)
 
     <ScheduleTaskModal
         @close="modalActive = false"

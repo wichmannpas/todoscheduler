@@ -33,7 +33,7 @@
           </div>
           <div class="column col-6">
             <p class="align-right">
-              {{ task.incompleteDuration.toNumber() }}h
+              {{ task.incompleteDuration().toNumber() }}h
             </p>
           </div>
         </div>
