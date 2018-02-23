@@ -11,6 +11,9 @@ function Task (id, name, duration, scheduledDuration, finishedDuration, defaultS
 Task.prototype.incompleteDuration = function () {
   return this.duration.sub(this.scheduledDuration)
 }
+Task.prototype.incomplete = function () {
+  return this.incompleteDuration().toNumber() > 0
+}
 
 function objectToTask (task) {
   if (task instanceof Task) {
