@@ -33,7 +33,7 @@ export default {
     clearIncompleteTasks (state) {
       Vue.set(state, 'incomplete', [])
     },
-    deleteTask (state, payload) {
+    deleteIncompleteTask (state, payload) {
       let task = objectToTask(payload)
 
       for (let i = 0; i < state.incomplete.length; i++) {
