@@ -20,6 +20,11 @@
         data-tooltip="Edit task">
       <span class="fa fa-pencil"></span></a>
     <a
+        @click="finishTask()"
+        class="tooltip"
+        data-tooltip="Finish task">
+      <span class="fa fa-check"></span></a>
+    <a
         @click="scheduleModalActive = true"
         class="task-schedule tooltip"
         data-tooltip="Schedule">
@@ -28,6 +33,7 @@
 </template>
 
 <script>
+import Api from '@/api/Api'
 import EditTaskModal from '@/components/EditTaskModal'
 import ScheduleTaskModal from '@/components/ScheduleTaskModal'
 
@@ -45,6 +51,11 @@ export default {
   components: {
     EditTaskModal,
     ScheduleTaskModal
+  },
+  methods: {
+    finishTask () {
+      Api.finishTask(this.$store, this.task)
+    }
   }
 }
 </script>

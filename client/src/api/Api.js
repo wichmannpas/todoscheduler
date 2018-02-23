@@ -53,6 +53,42 @@ export default {
       store.dispatch('setIncompleteTasks', response.data)
     })
   },
+  finishTask (store, task) {
+    return new Promise(function (resolve, reject) {
+      let duration = task.duration.sub(task.incompleteDuration())
+      if (duration.toNumber() <= 0) {
+        // unscheduled task, delete it
+        axios.delete('/api/tasks/task/' + task.id.toString() + '/').then(function (response) {
+          if (response.status === 204) {
+            store.commit('deleteIncompleteTask', task)
+
+            resolve()
+          } else {
+            reject(response.data)
+          }
+        }).catch(function (error) {
+          console.error(error)
+          reject(error.response.data)
+        })
+      } else {
+        // update the task duration
+        axios.patch('/api/tasks/task/' + task.id.toString() + '/', {
+          duration: duration
+        }).then(function (response) {
+          if (response.status === 200) {
+            store.commit('updateTask', response.data)
+            store.dispatch('updateTaskInExecutions', response.data)
+            resolve()
+          } else {
+            reject(response.data)
+          }
+        }).catch(function (error) {
+          console.error(error)
+          reject(error.response.data)
+        })
+      }
+    })
+  },
   scheduleTask (store, task, day, duration) {
     return new Promise(function (resolve, reject) {
       axios.post('/api/tasks/taskexecution/', {
