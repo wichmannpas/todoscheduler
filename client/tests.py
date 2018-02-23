@@ -510,6 +510,48 @@ class OverviewTest(AuthenticatedSeleniumTest):
 
         self.assertEqual(task.executions.count(), 0)
 
+    def test_task_unscheduled_finish(self):
+        """
+        Finish a task from the incomplete list that has no task executions.
+        """
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        self.selenium.find_element_by_css_selector('[data-tooltip="Finish task"]').click()
+        sleep(0.5)
+
+        self.assertRaises(
+            ObjectDoesNotExist,
+            task.refresh_from_db)
+
+    def test_task_scheduled_finish(self):
+        """
+        Finish a task from the incomplete list that has task executions.
+        """
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        execution = TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        self.selenium.find_element_by_css_selector('[data-tooltip="Finish task"]').click()
+        sleep(0.5)
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.duration,
+            Decimal('2'))
+
     def test_task_execution_increase_time(self):
         task = Task.objects.create(
             user=self.user,
