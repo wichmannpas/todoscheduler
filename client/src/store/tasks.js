@@ -53,7 +53,7 @@ export default {
 
         if (otherTask.id === task.id) {
           contained = true
-          if (task.incompleteDuration().toNumber() <= 0) {
+          if (!task.incomplete()) {
             // not incomplete anymore
             Vue.delete(state.incomplete, i)
           } else {
@@ -61,7 +61,7 @@ export default {
           }
         }
       }
-      if (!contained) {
+      if (!contained && task.incomplete()) {
         let index = taskIndex(state.incomplete, task)
         state.incomplete.splice(index, 0, task)
       }
