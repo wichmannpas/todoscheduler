@@ -1,3 +1,5 @@
+import os
+
 from datetime import date, timedelta
 from decimal import Decimal
 from time import sleep
@@ -17,8 +19,8 @@ from task.models import Task, TaskExecution
 class SeleniumTest(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
-        # TODO: we do not want to rebuild the application every time
-        call('./build_client', stdout=DEVNULL, stderr=DEVNULL)
+        if 'NO_BUILD_CLIENT' not in os.environ:
+            call('./build_client', stdout=DEVNULL, stderr=DEVNULL)
         super().setUpClass()
         options = webdriver.ChromeOptions()
         options.add_argument('--headless')
