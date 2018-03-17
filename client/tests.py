@@ -110,6 +110,73 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(task.name, 'Testtask')
         self.assertEqual(task.duration, Decimal('42.2'))
 
+    def test_new_task_scheduling_today(self):
+        """Test creating a new task and instantly scheduling it."""
+        self.assertEqual(Task.objects.count(), 0)
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        new_task_link = self.selenium.find_element_by_link_text('New Task')
+        new_task_link.click()
+        sleep(0.1)
+        name_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Name"]')
+        name_input.send_keys('Testtask')
+        duration_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Duration"]')
+        duration_input.clear()
+        duration_input.send_keys('42.2')
+        schedule_checkbox = self.selenium.find_element_by_class_name('form-switch')
+        schedule_checkbox.click()
+        self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        sleep(0.5)
+
+        self.assertEqual(Task.objects.count(), 1)
+        task = Task.objects.first()
+        self.assertEqual(task.name, 'Testtask')
+        self.assertEqual(task.duration, Decimal('42.2'))
+
+        self.assertEqual(TaskExecution.objects.count(), 1)
+        execution = TaskExecution.objects.first()
+        self.assertEqual(execution.task, task)
+        self.assertEqual(execution.day, date.today())
+
+    def test_new_task_scheduling_tomorrow(self):
+        """Test creating a new task and instantly scheduling it."""
+        self.assertEqual(Task.objects.count(), 0)
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        new_task_link = self.selenium.find_element_by_link_text('New Task')
+        new_task_link.click()
+        sleep(0.1)
+        name_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Name"]')
+        name_input.send_keys('Testtask')
+        duration_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Duration"]')
+        duration_input.clear()
+        duration_input.send_keys('42.2')
+        schedule_checkbox = self.selenium.find_element_by_class_name('form-switch')
+        schedule_checkbox.click()
+        schedule_for = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]//select')
+        Select(schedule_for).select_by_visible_text(
+            'Tomorrow')
+        self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        sleep(0.5)
+
+        self.assertEqual(Task.objects.count(), 1)
+        task = Task.objects.first()
+        self.assertEqual(task.name, 'Testtask')
+        self.assertEqual(task.duration, Decimal('42.2'))
+
+        self.assertEqual(TaskExecution.objects.count(), 1)
+        execution = TaskExecution.objects.first()
+        self.assertEqual(execution.task, task)
+        self.assertEqual(execution.day, date.today() + timedelta(days=1))
+
     def test_new_task_invalid_duration(self):
         self.assertEqual(Task.objects.count(), 0)
 
