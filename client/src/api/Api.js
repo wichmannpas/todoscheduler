@@ -125,7 +125,7 @@ export default {
       }).then(function (response) {
         if (response.status === 201) {
           store.commit('addIncompleteTask', response.data)
-          resolve()
+          resolve(response.data)
         } else {
           reject(response.data)
         }

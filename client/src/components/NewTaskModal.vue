@@ -45,6 +45,23 @@
               <span class="input-group-addon">h</span>
             </div>
 
+            <div class="form-group">
+              <label class="form-switch">
+                <input
+                    v-model="schedule"
+                    v-bind:disabled="loading"
+                    type="checkbox">
+                <i class="form-icon"></i> Schedule
+              </label>
+            </div>
+            <select
+                v-model="scheduleFor"
+                v-if="schedule"
+                class="form-select">
+              <option value="today">Today</option>
+              <option value="tomorrow">Tomorrow</option>
+            </select>
+
             <div
                 v-if="loading"
                 class="loading loading-lg">
@@ -74,12 +91,15 @@
 import Vue from 'vue'
 
 import Api from '@/api/Api'
+import { objectToTask } from '@/models/Task'
 
 export default {
   name: 'NewTaskModal',
   data: function () {
     return {
       loading: false,
+      schedule: false,
+      scheduleFor: 'today',
       errors: [],
       task: {
         name: '',
@@ -95,11 +115,29 @@ export default {
       event.preventDefault()
       this.loading = true
 
-      Api.createTask(this.$store, this.task).then((response) => {
-        this.loading = false
-        Vue.set(this, 'errors', [])
+      Api.createTask(this.$store, this.task).then((task) => {
+        if (this.schedule) {
+          Api.scheduleTask(
+            this.$store,
+            objectToTask(task),
+            this.scheduleFor,
+            this.task.duration
+          ).then((response) => {
+            this.loading = false
+            Vue.set(this, 'errors', [])
 
-        this.closeModal()
+            this.closeModal()
+          }).catch((response) => {
+            this.loading = false
+
+            Vue.set(this, 'errors', Object.keys(response))
+          })
+        } else {
+          this.loading = false
+          Vue.set(this, 'errors', [])
+
+          this.closeModal()
+        }
       }).catch((response) => {
         this.loading = false
 
