@@ -41,7 +41,7 @@ script:
   - flake8
   - ./build_client
   - ./manage.py collectstatic --no-input
-  - coverage run manage.py test
+  - NO_BUILD_CLIENT=1 coverage run manage.py test
 
 after_success:
   - codecov
