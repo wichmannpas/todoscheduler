@@ -11,6 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import call_command
 from rest_framework.authtoken.models import Token as AuthToken
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 
 from task.models import Task, TaskExecution
@@ -105,6 +106,52 @@ class OverviewTest(AuthenticatedSeleniumTest):
         duration_input.clear()
         duration_input.send_keys('42.2')
         self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        sleep(0.5)
+
+        self.assertEqual(Task.objects.count(), 1)
+        task = Task.objects.first()
+        self.assertEqual(task.name, 'Testtask')
+        self.assertEqual(task.duration, Decimal('42.2'))
+
+    def test_new_task_submit_with_enter_duration(self):
+        self.assertEqual(Task.objects.count(), 0)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        new_task_link = self.selenium.find_element_by_link_text('New Task')
+        new_task_link.click()
+        sleep(0.1)
+        name_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Name"]')
+        name_input.send_keys('Testtask')
+        duration_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Duration"]')
+        duration_input.clear()
+        duration_input.send_keys('42.2')
+        duration_input.send_keys(Keys.ENTER)
+        sleep(0.5)
+
+        self.assertEqual(Task.objects.count(), 1)
+        task = Task.objects.first()
+        self.assertEqual(task.name, 'Testtask')
+        self.assertEqual(task.duration, Decimal('42.2'))
+
+    def test_new_task_submit_with_enter_name(self):
+        self.assertEqual(Task.objects.count(), 0)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        new_task_link = self.selenium.find_element_by_link_text('New Task')
+        new_task_link.click()
+        sleep(0.1)
+        name_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Name"]')
+        name_input.send_keys('Testtask')
+        duration_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Duration"]')
+        duration_input.clear()
+        duration_input.send_keys('42.2')
+        name_input.send_keys(Keys.ENTER)
         sleep(0.5)
 
         self.assertEqual(Task.objects.count(), 1)
@@ -417,6 +464,40 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(execution.duration, Decimal(1))
         self.assertFalse(execution.finished)
 
+    def test_schedule_task_for_today_submit_with_enter_duration(self):
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        # create dummy task
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        schedule_link = self.selenium.find_element_by_xpath('//a[@data-tooltip="Schedule"]')
+        schedule_link.click()
+        sleep(0.1)
+        modal_body = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]')
+        self.assertIn(
+            'Testtask',
+            modal_body.get_attribute('innerHTML'))
+        self.assertIn(
+            '5h',
+            modal_body.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Duration"]')
+        duration_input.clear()
+        duration_input.send_keys('1')
+        duration_input.send_keys(Keys.ENTER)
+        sleep(0.5)
+
+        self.assertEqual(task.executions.count(), 1)
+        execution = task.executions.first()
+        self.assertEqual(execution.day, date.today())
+        self.assertEqual(execution.duration, Decimal(1))
+        self.assertFalse(execution.finished)
+
     def test_schedule_task_for_tomorrow(self):
         self.assertEqual(TaskExecution.objects.count(), 0)
 
@@ -536,6 +617,47 @@ class OverviewTest(AuthenticatedSeleniumTest):
         date_input.clear()
         date_input.send_keys('2017-01-02')
         self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
+        sleep(0.5)
+
+        self.assertEqual(task.executions.count(), 1)
+        execution = task.executions.first()
+        self.assertEqual(execution.day, date(2017, 1, 2))
+        self.assertEqual(execution.duration, Decimal(1))
+        self.assertFalse(execution.finished)
+
+    def test_schedule_task_for_another_time_submit_with_enter_date(self):
+        self.assertEqual(TaskExecution.objects.count(), 0)
+
+        # create dummy task
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        schedule_link = self.selenium.find_element_by_xpath('//a[@data-tooltip="Schedule"]')
+        schedule_link.click()
+        sleep(0.1)
+        modal_body = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]')
+        self.assertIn(
+            'Testtask',
+            modal_body.get_attribute('innerHTML'))
+        self.assertIn(
+            '5h',
+            modal_body.get_attribute('innerHTML'))
+        duration_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Duration"]')
+        duration_input.clear()
+        duration_input.send_keys('1')
+        schedule_for = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]//select')
+        Select(schedule_for).select_by_visible_text(
+            'Another Time')
+        date_input = self.selenium.find_element_by_xpath(
+            '//div[contains(@class, "modal-body")]//input[@placeholder="Schedule for date"]')
+        date_input.clear()
+        date_input.send_keys('2017-01-02')
+        date_input.send_keys(Keys.ENTER)
         sleep(0.5)
 
         self.assertEqual(task.executions.count(), 1)
