@@ -1,6 +1,6 @@
 <template>
   <form
-      @submit="scheduleTask">
+      @submit="event.preventDefault()">
     <div class="form-group">
       <label class="form-label">
         Schedule for
@@ -17,6 +17,7 @@
         <option value="another_time">Another Time</option>
       </select>
       <input
+          @keyup.enter="scheduleTask"
           v-model="scheduleForDate"
           v-bind:class="[
             { 'is-error': errors.indexOf('day') >= 0 }
@@ -30,6 +31,7 @@
     <div
         class="input-group">
       <input
+          @keyup.enter="scheduleTask"
           ref="duration"
           v-model="duration"
           v-bind:class="[
