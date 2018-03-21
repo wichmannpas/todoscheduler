@@ -32,6 +32,8 @@ class Task(models.Model):
             MinValueValidator(Decimal('0.01')),
         ))
 
+    start = models.DateField(null=True)
+
     def __str__(self) -> str:
         return '{}: {}'.format(self.user, self.name)
 
