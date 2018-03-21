@@ -15,6 +15,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'duration',
+            'start',
             'incomplete_duration',
             'scheduled_duration',
             'finished_duration',
