@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from django.db.models import F
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.permissions import IsAuthenticated
@@ -14,10 +15,11 @@ class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
+        queryset = self.request.user.tasks.all()
         if 'incomplete' in self.request.query_params:
-            return Task.incomplete_tasks(self.request.user).order_by('name')
+            queryset = Task.incomplete_tasks(self.request.user)
 
-        return self.request.user.tasks.all().order_by('name')
+        return queryset.order_by(F('start').asc(nulls_first=True), 'name')
 
 
 class TaskExecutionViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin,

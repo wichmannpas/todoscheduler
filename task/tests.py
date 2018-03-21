@@ -450,6 +450,47 @@ class TaskViewTest(AuthenticatedApiTest):
             len(resp.data),
             2)
 
+    @freeze_time('2001-02-03')
+    def test_list_all_tasks_ordering(self):
+        """
+        Test that the ordering of the task listing is
+        correct.
+        """
+        Task.objects.create(
+            user=self.user,
+            name='A Testtask',
+            duration=Decimal(2))
+        Task.objects.create(
+            user=self.user,
+            name='B Testtask',
+            duration=Decimal(3))
+        Task.objects.create(
+            user=self.user,
+            name='0 Testtask',
+            duration=Decimal(3),
+            start=date(2001, 2, 10))
+        Task.objects.create(
+            user=self.user,
+            name='1 Testtask',
+            duration=Decimal(3),
+            start=date(2001, 2, 9))
+
+        resp = self.client.get('/api/tasks/task/')
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertListEqual(
+            [
+                item['name']
+                for item in resp.data
+            ],
+            [
+                'A Testtask',
+                'B Testtask',
+                '1 Testtask',
+                '0 Testtask',
+            ])
+
     def test_list_incomplete_tasks(self):
         """
         Test the filtering for incomplete tasks.
