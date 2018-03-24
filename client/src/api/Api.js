@@ -121,7 +121,8 @@ export default {
     return new Promise(function (resolve, reject) {
       axios.post('/api/tasks/task/', {
         name: task.name,
-        duration: task.duration
+        duration: task.duration,
+        start: task.start
       }).then(function (response) {
         if (response.status === 201) {
           store.commit('addIncompleteTask', response.data)
@@ -139,7 +140,8 @@ export default {
     return new Promise(function (resolve, reject) {
       axios.put('/api/tasks/task/' + task.id.toString() + '/', {
         name: task.name,
-        duration: task.duration
+        duration: task.duration,
+        start: task.start
       }).then(function (response) {
         if (response.status === 200) {
           store.commit('updateTask', response.data)

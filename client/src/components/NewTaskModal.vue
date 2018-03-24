@@ -84,7 +84,8 @@ export default {
       errors: [],
       task: {
         name: '',
-        duration: 1
+        duration: 1,
+        start: null
       }
     }
   },

@@ -33,10 +33,25 @@
           step="0.01" />
       <span class="input-group-addon">h</span>
     </div>
+
+    <input
+        ref="start"
+        :value="startString"
+        @input="updateTask"
+        @keyup.enter="submit"
+        v-bind:disabled="loading"
+        v-bind:class="[
+          { 'is-error': errors.indexOf('start') >= 0 }
+        ]"
+        type="date"
+        class="form-input"
+        placeholder="Start" />
   </form>
 </template>
 
 <script>
+import { formatDayString } from '@/utils'
+
 export default {
   name: 'TaskForm',
   props: [
@@ -50,14 +65,27 @@ export default {
       this.$refs.name.focus()
     }
   },
+  computed: {
+    startString () {
+      if (this.value.start === null) {
+        return null
+      }
+      return formatDayString(this.value.start)
+    }
+  },
   methods: {
     submit () {
       this.$emit('submit')
     },
     updateTask () {
+      let start = this.$refs.start.value
+      if (start === '') {
+        start = null
+      }
       this.$emit('input', {
         name: this.$refs.name.value,
-        duration: this.$refs.duration.value
+        duration: this.$refs.duration.value,
+        start: start
       })
     }
   }
