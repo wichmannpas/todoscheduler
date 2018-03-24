@@ -1,6 +1,6 @@
 import Vue from 'vue'
 
-import { objectToTask } from '@/models/Task'
+import { compareTasks, objectToTask } from '@/models/Task'
 
 /**
  * Find the index at which to insert a new task.
@@ -10,7 +10,7 @@ function taskIndex (taskList, newTask) {
   while (index < taskList.length) {
     let task = taskList[index]
 
-    if (task.name > newTask.name) {
+    if (compareTasks(task, newTask) > 0) {
       break
     }
 
@@ -43,28 +43,6 @@ export default {
           Vue.delete(state.incomplete, i)
         }
       }
-    },
-    updateTask (state, payload) {
-      let task = objectToTask(payload)
-
-      let contained = false
-      for (let i = 0; i < state.incomplete.length; i++) {
-        let otherTask = state.incomplete[i]
-
-        if (otherTask.id === task.id) {
-          contained = true
-          if (!task.incomplete()) {
-            // not incomplete anymore
-            Vue.delete(state.incomplete, i)
-          } else {
-            Vue.set(state.incomplete, i, task)
-          }
-        }
-      }
-      if (!contained && task.incomplete()) {
-        let index = taskIndex(state.incomplete, task)
-        state.incomplete.splice(index, 0, task)
-      }
     }
   },
   actions: {
@@ -73,6 +51,15 @@ export default {
       for (let i = 0; i < tasks.length; i++) {
         let task = tasks[i]
         context.commit('addIncompleteTask', objectToTask(task))
+      }
+    },
+    updateTask (context, payload) {
+      let task = objectToTask(payload)
+
+      context.commit('deleteIncompleteTask', task)
+
+      if (task.incomplete()) {
+        context.commit('addIncompleteTask', task)
       }
     }
   }

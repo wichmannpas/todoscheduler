@@ -76,7 +76,7 @@ export default {
           duration: duration
         }).then(function (response) {
           if (response.status === 200) {
-            store.commit('updateTask', response.data)
+            store.dispatch('updateTask', response.data)
             store.dispatch('updateTaskInExecutions', response.data)
             resolve()
           } else {
@@ -97,7 +97,7 @@ export default {
         duration: duration
       }).then(function (response) {
         if (response.status === 201) {
-          store.commit('updateTask', response.data.task)
+          store.dispatch('updateTask', response.data.task)
           store.dispatch('addTaskExecution', response.data)
 
           resolve()
@@ -144,7 +144,7 @@ export default {
         start: task.start
       }).then(function (response) {
         if (response.status === 200) {
-          store.commit('updateTask', response.data)
+          store.dispatch('updateTask', response.data)
           store.dispatch('updateTaskInExecutions', response.data)
           resolve()
         } else {
@@ -161,7 +161,7 @@ export default {
       axios.patch('/api/tasks/task/' + task.id.toString() + '/', {
         duration: newDuration
       }).then(function (response) {
-        store.commit('updateTask', response.data)
+        store.dispatch('updateTask', response.data)
         store.dispatch('updateTaskInExecutions', response.data)
 
         resolve()
@@ -182,7 +182,7 @@ export default {
         if (postpone) {
           let task = execution.task
           task.scheduledDuration = task.scheduledDuration.sub(execution.duration)
-          store.commit('updateTask', task)
+          store.dispatch('updateTask', task)
           store.dispatch('updateTaskInExecutions', task)
         }
 
@@ -196,7 +196,7 @@ export default {
         duration: newDuration
       }).then(function (response) {
         store.dispatch('updateTaskExecution', response.data)
-        store.commit('updateTask', response.data.task)
+        store.dispatch('updateTask', response.data.task)
         store.dispatch('updateTaskInExecutions', response.data.task)
 
         resolve()
@@ -222,7 +222,7 @@ export default {
         finished: newState
       }).then(function (response) {
         store.dispatch('updateTaskExecution', response.data)
-        store.commit('updateTask', response.data.task)
+        store.dispatch('updateTask', response.data.task)
         store.dispatch('updateTaskInExecutions', response.data.task)
 
         resolve()
