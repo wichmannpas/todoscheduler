@@ -105,7 +105,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
             '//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('42.2')
-        self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Create Task")]').click()
         sleep(0.5)
 
         self.assertEqual(Task.objects.count(), 1)
@@ -178,7 +178,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         duration_input.send_keys('42.2')
         schedule_checkbox = self.selenium.find_element_by_class_name('form-switch')
         schedule_checkbox.click()
-        self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Create Task")]').click()
         sleep(0.5)
 
         self.assertEqual(Task.objects.count(), 1)
@@ -213,7 +213,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         schedule_for = self.selenium.find_element_by_xpath('//div[contains(@class, "modal-body")]//select')
         Select(schedule_for).select_by_visible_text(
             'Tomorrow')
-        self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Create Task")]').click()
         sleep(0.5)
 
         self.assertEqual(Task.objects.count(), 1)
@@ -241,7 +241,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
             '//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('-42.2')
-        self.selenium.find_element_by_xpath('//input[@value="Create Task"]').click()
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Create Task")]').click()
         sleep(0.5)
 
         self.assertIn(
@@ -285,7 +285,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         duration_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('1')  # invalid, 3 hours are already scheduled
-        self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Update Task")]').click()
         sleep(0.5)
 
         self.assertIn(
@@ -330,7 +330,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         duration_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('42')
-        self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Update Task")]').click()
         sleep(0.5)
 
         task.refresh_from_db()
@@ -373,7 +373,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         name_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Name"]')
         name_input.clear()
         name_input.send_keys('Edited Task')
-        self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Update Task")]').click()
         sleep(0.5)
 
         task.refresh_from_db()
@@ -419,7 +419,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         duration_input = self.selenium.find_element_by_xpath('//div[@class="content"]//input[@placeholder="Duration"]')
         duration_input.clear()
         duration_input.send_keys('42')
-        self.selenium.find_element_by_xpath('//input[@value="Update Task"]').click()
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Update Task")]').click()
         sleep(0.5)
 
         task.refresh_from_db()
@@ -614,8 +614,8 @@ class OverviewTest(AuthenticatedSeleniumTest):
             'Another Time')
         date_input = self.selenium.find_element_by_xpath(
             '//div[contains(@class, "modal-body")]//input[@placeholder="Schedule for date"]')
-        date_input.clear()
-        date_input.send_keys('2017-01-02')
+        date_input.send_keys(Keys.DELETE)
+        date_input.send_keys('01/02/2017')
         self.selenium.find_element_by_xpath('//input[@value="Schedule"]').click()
         sleep(0.5)
 
@@ -655,8 +655,8 @@ class OverviewTest(AuthenticatedSeleniumTest):
             'Another Time')
         date_input = self.selenium.find_element_by_xpath(
             '//div[contains(@class, "modal-body")]//input[@placeholder="Schedule for date"]')
-        date_input.clear()
-        date_input.send_keys('2017-01-02')
+        date_input.send_keys(Keys.DELETE)
+        date_input.send_keys('01/02/2017')
         date_input.send_keys(Keys.ENTER)
         sleep(0.5)
 

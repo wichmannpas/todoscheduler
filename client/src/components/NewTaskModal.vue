@@ -12,77 +12,54 @@
           New Task
         </div>
       </div>
-      <form
-          @submit="createTask">
-        <div class="modal-body">
-          <div class="content">
+      <div class="modal-body">
+        <div class="content">
+          <TaskForm
+              @submit="createTask"
+              v-model="task"
+              v-bind:autofocus="true"
+              v-bind:loading="loading"
+              v-bind:errors="errors"
+          />
 
-            <input
-                ref="name"
-                v-model="task.name"
-                v-bind:disabled="loading"
-                v-bind:class="[
-                  { 'is-error': errors.indexOf('name') >= 0 }
-                ]"
-                type="text"
-                class="form-input"
-                placeholder="Name"
-                maxlength="40" />
-
-            <div class="input-group">
+          <div class="form-group">
+            <label class="form-switch">
               <input
-                  v-model="task.duration"
+                  v-model="schedule"
                   v-bind:disabled="loading"
-                  v-bind:class="[
-                    { 'is-error': errors.indexOf('duration') >= 0 }
-                  ]"
-                  type="number"
-                  class="
-                    form-input
-                    align-right"
-                  placeholder="Duration"
-                  step="0.01" />
-              <span class="input-group-addon">h</span>
-            </div>
+                  type="checkbox">
+              <i class="form-icon"></i> Schedule
+            </label>
+          </div>
+          <select
+              v-model="scheduleFor"
+              v-if="schedule"
+              class="form-select">
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+          </select>
 
-            <div class="form-group">
-              <label class="form-switch">
-                <input
-                    v-model="schedule"
-                    v-bind:disabled="loading"
-                    type="checkbox">
-                <i class="form-icon"></i> Schedule
-              </label>
-            </div>
-            <select
-                v-model="scheduleFor"
-                v-if="schedule"
-                class="form-select">
-              <option value="today">Today</option>
-              <option value="tomorrow">Tomorrow</option>
-            </select>
-
-            <div
-                v-if="loading"
-                class="loading loading-lg">
-            </div>
+          <div
+              v-if="loading"
+              class="loading loading-lg">
           </div>
         </div>
-        <div class="modal-footer">
-          <input
-              v-bind:disabled="loading"
-              type="submit"
-              class="btn btn-primary"
-              value="Create Task"/>
-          <button
-              @click="closeModal"
-              type="reset"
-              class="
-                btn btn-link">
-            Cancel
-          </button>
-        </div>
-      </form>
+      </div>
+      <div class="modal-footer">
+        <button
+            @click="createTask"
+            v-bind:disabled="loading"
+            class="btn btn-primary">
+          Create Task
+        </button>
+        <button
+            @click="closeModal"
+            type="reset"
+            class="
+              btn btn-link">
+          Cancel
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -92,9 +69,13 @@ import Vue from 'vue'
 
 import Api from '@/api/Api'
 import { objectToTask } from '@/models/Task'
+import TaskForm from '@/components/TaskForm'
 
 export default {
   name: 'NewTaskModal',
+  components: {
+    TaskForm
+  },
   data: function () {
     return {
       loading: false,
@@ -107,12 +88,8 @@ export default {
       }
     }
   },
-  mounted: function () {
-    this.$refs.name.focus()
-  },
   methods: {
-    createTask (event) {
-      event.preventDefault()
+    createTask () {
       this.loading = true
 
       Api.createTask(this.$store, this.task).then((task) => {

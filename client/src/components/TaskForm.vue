@@ -1,0 +1,65 @@
+<template>
+  <form
+      @submit="event.preventDefault()">
+    <input
+        ref="name"
+        :value="value.name"
+        @input="updateTask"
+        @keyup.enter="submit"
+        v-bind:disabled="loading"
+        v-bind:class="[
+          { 'is-error': errors.indexOf('name') >= 0 }
+        ]"
+        type="text"
+        class="form-input"
+        placeholder="Name"
+        maxlength="40" />
+
+    <div class="input-group">
+      <input
+          ref="duration"
+          :value="value.duration"
+          @input="updateTask"
+          @keyup.enter="submit"
+          v-bind:disabled="loading"
+          v-bind:class="[
+            { 'is-error': errors.indexOf('duration') >= 0 }
+          ]"
+          type="number"
+          class="
+            form-input
+            align-right"
+          placeholder="Duration"
+          step="0.01" />
+      <span class="input-group-addon">h</span>
+    </div>
+  </form>
+</template>
+
+<script>
+export default {
+  name: 'TaskForm',
+  props: [
+    'value',
+    'loading',
+    'errors',
+    'autofocus'
+  ],
+  mounted: function () {
+    if (this.autofocus) {
+      this.$refs.name.focus()
+    }
+  },
+  methods: {
+    submit () {
+      this.$emit('submit')
+    },
+    updateTask () {
+      this.$emit('input', {
+        name: this.$refs.name.value,
+        duration: this.$refs.duration.value
+      })
+    }
+  }
+}
+</script>
