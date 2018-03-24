@@ -23,7 +23,7 @@
             { 'is-error': errors.indexOf('day') >= 0 }
           ]"
           v-if="scheduleFor === 'another_time'"
-          type="text"
+          type="date"
           class="form-input"
           placeholder="Schedule for date"
           required />
