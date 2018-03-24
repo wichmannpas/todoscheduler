@@ -1,3 +1,4 @@
+import { isAfter } from 'date-fns'
 import { Decimal } from 'decimal.js'
 import { parseDayString } from '@/utils'
 
@@ -18,6 +19,11 @@ Task.prototype.incompleteDuration = function () {
 }
 Task.prototype.incomplete = function () {
   return this.incompleteDuration().toNumber() > 0
+}
+Task.prototype.startInFuture = function () {
+  let today = new Date()
+
+  return isAfter(this.start, today)
 }
 
 function objectToTask (task) {
