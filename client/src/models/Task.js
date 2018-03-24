@@ -34,7 +34,31 @@ function objectToTask (task) {
     task.start)
 }
 
+/**
+ * Compare tasks a and b.
+ * returns negative values if a < b
+ * 0 if a = b
+ * positive values if a > b
+ */
+function compareTasks (a, b) {
+  // first criterion: start
+  if (a.start === null && b.start !== null) {
+    return -1
+  } else if (a.start !== null && b.start === null) {
+    return 1
+  } else if (a.start < b.start) {
+    return -1
+  } else if (a.start > b.start) {
+    return 1
+  }
+  // start equals, use second criterion
+
+  // second criterion: name
+  return a.name > b.name
+}
+
 export {
+  compareTasks,
   objectToTask,
   Task
 }
