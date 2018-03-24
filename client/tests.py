@@ -112,6 +112,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         task = Task.objects.first()
         self.assertEqual(task.name, 'Testtask')
         self.assertEqual(task.duration, Decimal('42.2'))
+        self.assertEqual(task.start, None)
 
     def test_new_task_submit_with_enter_duration(self):
         self.assertEqual(Task.objects.count(), 0)
@@ -135,6 +136,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         task = Task.objects.first()
         self.assertEqual(task.name, 'Testtask')
         self.assertEqual(task.duration, Decimal('42.2'))
+        self.assertEqual(task.start, None)
 
     def test_new_task_submit_with_enter_name(self):
         self.assertEqual(Task.objects.count(), 0)
@@ -158,6 +160,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         task = Task.objects.first()
         self.assertEqual(task.name, 'Testtask')
         self.assertEqual(task.duration, Decimal('42.2'))
+        self.assertEqual(task.start, None)
 
     def test_new_task_scheduling_today(self):
         """Test creating a new task and instantly scheduling it."""
@@ -185,6 +188,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         task = Task.objects.first()
         self.assertEqual(task.name, 'Testtask')
         self.assertEqual(task.duration, Decimal('42.2'))
+        self.assertEqual(task.start, None)
 
         self.assertEqual(TaskExecution.objects.count(), 1)
         execution = TaskExecution.objects.first()
@@ -220,6 +224,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         task = Task.objects.first()
         self.assertEqual(task.name, 'Testtask')
         self.assertEqual(task.duration, Decimal('42.2'))
+        self.assertEqual(task.start, None)
 
         self.assertEqual(TaskExecution.objects.count(), 1)
         execution = TaskExecution.objects.first()
@@ -248,6 +253,32 @@ class OverviewTest(AuthenticatedSeleniumTest):
             'is-error',
             duration_input.get_attribute('class'))
         self.assertEqual(Task.objects.count(), 0)
+
+    def test_new_task_with_start_date(self):
+        self.assertEqual(Task.objects.count(), 0)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        new_task_link = self.selenium.find_element_by_link_text('New Task')
+        new_task_link.click()
+        sleep(0.1)
+        name_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Name"]')
+        name_input.send_keys('Testtask')
+        duration_input = self.selenium.find_element_by_xpath(
+            '//input[@placeholder="Duration"]')
+        duration_input.clear()
+        duration_input.send_keys('42.2')
+        start_input = self.selenium.find_element_by_xpath('//input[@type="date" and @placeholder="Start"]')
+        start_input.send_keys('05/02/2018')
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Create Task")]').click()
+        sleep(0.5)
+
+        self.assertEqual(Task.objects.count(), 1)
+        task = Task.objects.first()
+        self.assertEqual(task.name, 'Testtask')
+        self.assertEqual(task.duration, Decimal('42.2'))
+        self.assertEqual(task.start, date(2018, 5, 2))
 
     def test_edit_task_duration_too_low(self):
         """
@@ -429,6 +460,51 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.assertEqual(
             task.duration,
             Decimal(42))
+
+    def test_edit_task_start_incomplete(self):
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=5)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=2,
+            day_order=0)
+        TaskExecution.objects.create(
+            day=date.today(),
+            task=task,
+            duration=1,
+            day_order=0,
+            finished=True)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        edit_task_link = self.selenium.find_elements_by_class_name('fa-pencil')[0]
+        edit_task_link.click()
+        sleep(0.1)
+        scheduled_display = self.selenium.find_element_by_xpath('//div[@class="content"]/p')
+        self.assertIn(
+            'Scheduled: 3h',
+            scheduled_display.get_attribute('innerHTML'))
+        self.assertIn(
+            '1h finished',
+            scheduled_display.get_attribute('innerHTML'))
+        start_input = self.selenium.find_element_by_xpath('//input[@type="date" and @placeholder="Start"]')
+        start_input.send_keys('05/02/2018')
+        self.selenium.find_element_by_xpath('//button[contains(text(), "Update Task")]').click()
+        sleep(0.5)
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.name,
+            'Testtask')
+        self.assertEqual(
+            task.duration,
+            Decimal(5))
+        self.assertEqual(
+            task.start,
+            date(2018, 5, 2))
 
     def test_schedule_task_for_today(self):
         self.assertEqual(TaskExecution.objects.count(), 0)
