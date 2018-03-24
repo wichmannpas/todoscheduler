@@ -1,9 +1,11 @@
 <template>
   <div>
-    <div v-if="incompleteTasks.length > 0">
-      <p>
-        Some tasks are not fully scheduled yet!
-      </p>
+    <div
+        v-if="incompleteTasks.length > 0"
+        style="
+          max-height: 12em;
+          overflow-x: hidden;
+          overflow-y: auto;">
       <div class="columns">
         <div class="column col-6 col-sm-12">
           <ul>
