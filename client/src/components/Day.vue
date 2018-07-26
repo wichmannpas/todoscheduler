@@ -29,7 +29,7 @@
       <div class="footer">
         <span class="float-right">
           <span class="fa fa-clock-o tooltip"
-                data-tooltip="{% trans 'Remaining/total scheduled duration' %}">
+                data-tooltip="Remaining/total scheduled duration">
           </span>&nbsp;{{ day.remainingDuration().toNumber() }}h/{{ day.scheduledDuration().toNumber() }}h
         </span>
       </div>
