@@ -948,6 +948,48 @@ class OverviewTest(AuthenticatedSeleniumTest):
             task.duration,
             Decimal(5))
 
+    def test_task_execution_left(self):
+        task1 = Task.objects.create(
+            user=self.user,
+            name='Task 1',
+            duration=5)
+        execution1 = TaskExecution.objects.create(
+            day=date.today(),
+            task=task1,
+            duration=2,
+            day_order=0)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        self.selenium.find_elements_by_css_selector('[data-tooltip="Move to previous day"]')[0].click()
+        sleep(0.5)
+
+        execution1.refresh_from_db()
+        self.assertEqual(
+            execution1.day,
+            date.today() - timedelta(days=1))
+
+    def test_task_execution_right(self):
+        task1 = Task.objects.create(
+            user=self.user,
+            name='Task 1',
+            duration=5)
+        execution1 = TaskExecution.objects.create(
+            day=date.today(),
+            task=task1,
+            duration=2,
+            day_order=0)
+
+        self.selenium.get(self.live_server_url)
+        sleep(0.5)
+        self.selenium.find_elements_by_css_selector('[data-tooltip="Move to next day"]')[0].click()
+        sleep(0.5)
+
+        execution1.refresh_from_db()
+        self.assertEqual(
+            execution1.day,
+            date.today() + timedelta(days=1))
+
     def test_task_execution_up(self):
         task1 = Task.objects.create(
             user=self.user,

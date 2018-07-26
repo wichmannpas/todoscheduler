@@ -28,7 +28,16 @@ function isPastDay (day) {
   return isPast(new Date(format(day, 'YYYY-MM-DD') + 'T23:59:59'))
 }
 
+/**
+ * Add the delta (in microseconds) to the string-formatted day.
+ */
+function dayDelta (day, delta) {
+  let newDay = new Date(new Date(day).getTime() + delta)
+  return formatDayString(newDay)
+}
+
 export {
+  dayDelta,
   formatDayString,
   parseDayString,
   isPastDay,

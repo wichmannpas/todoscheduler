@@ -62,6 +62,15 @@
     </span>
     <span class="float-right">
       <a
+          @click="updateExecutionDay(-1)"
+          class="tooltip tooltip-left"
+          v-bind:class="[
+            { 'invisible': execution.finished }
+          ]"
+          data-tooltip="Move to previous day">
+        <span class="fa fa-arrow-left"></span>
+      </a>
+      <a
           @click="moveExecution(-1)"
           class="tooltip tooltip-left"
           v-bind:class="[
@@ -80,6 +89,15 @@
           ]"
           data-tooltip="Needs time later">
         <span class="fa fa-arrow-down"></span>
+      </a>
+      <a
+          @click="updateExecutionDay(1)"
+          class="tooltip tooltip-left"
+          v-bind:class="[
+            { 'invisible': execution.finished }
+          ]"
+          data-tooltip="Move to next day">
+        <span class="fa fa-arrow-right"></span>
       </a>
       <a
           @click="changeExecutionDuration('-0.5')"
@@ -108,6 +126,7 @@
 <script>
 import Api from '@/api/Api'
 import EditTaskModal from '@/components/EditTaskModal'
+import { dayDelta } from '@/utils'
 
 export default {
   name: 'TaskExecution',
@@ -202,6 +221,21 @@ export default {
         this.$store,
         this.execution,
         true).then(
+        () => {
+          this.loading = false
+        })
+    },
+    updateExecutionDay (direction) {
+      let newDay = dayDelta(
+        this.execution.day,
+        direction * 86400000)
+      console.log(this.execution.day)
+
+      this.loading = true
+      Api.updateTaskExecutionDay(
+        this.$store,
+        this.execution,
+        newDay).then(
         () => {
           this.loading = false
         })
