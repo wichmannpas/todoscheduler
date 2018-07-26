@@ -228,5 +228,16 @@ export default {
         resolve()
       })
     })
+  },
+  updateTaskExecutionDay (store, execution, newDay) {
+    return new Promise(function (resolve, reject) {
+      axios.patch('/api/tasks/taskexecution/' + execution.id.toString() + '/', {
+        day: newDay
+      }).then(function (response) {
+        store.dispatch('updateTaskExecution', response.data)
+
+        resolve()
+      })
+    })
   }
 }
