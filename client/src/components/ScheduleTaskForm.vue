@@ -1,6 +1,6 @@
 <template>
   <form
-      @submit="event.preventDefault()">
+      @submit.prevent="scheduleTask">
     <div class="form-group">
       <label class="form-label">
         Schedule for
@@ -31,7 +31,6 @@
     <div
         class="input-group">
       <input
-          @keyup.enter="scheduleTask"
           ref="duration"
           v-model="duration"
           v-bind:class="[
@@ -81,10 +80,11 @@ export default {
     this.$refs.duration.focus()
   },
   methods: {
-    scheduleTask (event) {
-      if (event !== undefined) {
-        event.preventDefault()
+    scheduleTask () {
+      if (this.loading) {
+        return
       }
+
       this.loading = true
 
       let day = this.scheduleForDate

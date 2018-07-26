@@ -1,11 +1,11 @@
 <template>
   <form
-      @submit="event.preventDefault()">
+      @submit.prevent="$emit('submit')">
     <input
         ref="name"
         :value="value.name"
         @input="updateTask"
-        @keyup.enter="submit"
+        @keyup.enter="$emit('submit')"
         v-bind:disabled="loading"
         v-bind:class="[
           { 'is-error': errors.indexOf('name') >= 0 }
@@ -20,7 +20,7 @@
           ref="duration"
           :value="value.duration"
           @input="updateTask"
-          @keyup.enter="submit"
+          @keyup.enter="$emit('submit')"
           v-bind:disabled="loading"
           v-bind:class="[
             { 'is-error': errors.indexOf('duration') >= 0 }
@@ -38,7 +38,7 @@
         ref="start"
         :value="startString"
         @input="updateTask"
-        @keyup.enter="submit"
+        @keyup.enter="$emit('submit')"
         v-bind:disabled="loading"
         v-bind:class="[
           { 'is-error': errors.indexOf('start') >= 0 }
@@ -74,9 +74,6 @@ export default {
     }
   },
   methods: {
-    submit () {
-      this.$emit('submit')
-    },
     updateTask () {
       let start = this.$refs.start.value
       if (start === '') {

@@ -1,5 +1,6 @@
 <template>
-  <form @submit="login">
+  <form
+      @submit.prevent="login">
     <div class="form-group">
       <label class="form-label" for="login-username">
         Username
@@ -62,9 +63,7 @@ export default {
     })
   },
   methods: {
-    login (event) {
-      event.preventDefault()
-
+    login () {
       this.authFailure = false
       this.loading = true
       Api.login(this.user.username, this.user.password).then(
