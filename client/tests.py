@@ -25,7 +25,7 @@ class SeleniumTest(StaticLiveServerTestCase):
         super().setUpClass()
         options = webdriver.ChromeOptions()
         options.add_argument('--headless')
-        cls.selenium = webdriver.Chrome(chrome_options=options)
+        cls.selenium = webdriver.Chrome(options=options)
         cls.selenium.implicitly_wait(10)
 
     @classmethod
@@ -915,7 +915,7 @@ class OverviewTest(AuthenticatedSeleniumTest):
         self.selenium.get(self.live_server_url)
         sleep(0.5)
         self.selenium.find_element_by_css_selector('[data-tooltip="No time needed on this day"]').click()
-        alert = self.selenium.switch_to_alert()
+        alert = self.selenium.switch_to.alert
         alert.accept()
         sleep(0.5)
 
