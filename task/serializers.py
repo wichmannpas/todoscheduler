@@ -134,7 +134,13 @@ class TaskExecutionSerializer(serializers.ModelSerializer):
                     instance.task.duration += duration_delta
                     instance.task.save()
 
-            if 'day_order' in validated_data:
+            new_day = validated_data.get('day')
+            if new_day and new_day != instance.day:
+                # move to another day (ignoring provided day order)
+                validated_data['day_order'] = TaskExecution.get_next_day_order(
+                    instance.task.user, new_day)
+            elif 'day_order' in validated_data:
+                # exchange day order
                 day = instance.day
                 if 'day' in validated_data:
                     day = validated_data['day']
