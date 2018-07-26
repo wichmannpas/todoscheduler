@@ -810,6 +810,79 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             task_execution2.day_order,
             2)
 
+    def test_task_execution_change_day(self):
+        """
+        Test changing the day of a task execution. The submitted
+        day order should be ignored and the execution placed at the
+        end of the new day.
+        """
+        task_execution1 = TaskExecution.objects.create(
+            task=self.task,
+            day=self.day,
+            duration=Decimal(1),
+            day_order=1
+        )
+        task_execution2 = TaskExecution.objects.create(
+            task=self.task,
+            day=self.day2,
+            duration=Decimal(1),
+            day_order=1
+        )
+
+        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution1.pk), {
+            'day': '2001-02-04',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task_execution1.refresh_from_db()
+        self.assertEqual(
+            task_execution1.day_order,
+            2)
+        self.assertEqual(
+            task_execution1.day,
+            self.day2)
+        task_execution2.refresh_from_db()
+        self.assertEqual(
+            task_execution2.day_order,
+            1)
+
+        # provided day order should be ignored
+        resp = self.client.put('/api/tasks/taskexecution/{}/'.format(task_execution1.pk), {
+            'task_id': self.task.id,
+            'day': '2001-02-01',
+            'duration': 1,
+            'day_order': 42,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task_execution1.refresh_from_db()
+        self.assertEqual(
+            task_execution1.day_order,
+            1)
+        self.assertEqual(
+            task_execution1.day,
+            date(2001, 2, 1))
+        task_execution2.refresh_from_db()
+        self.assertEqual(
+            task_execution2.day_order,
+            1)
+
+        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution1.pk), {
+            'day': '2001-02-01',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task_execution1.refresh_from_db()
+        self.assertEqual(
+            task_execution1.day_order,
+            1)
+        self.assertEqual(
+            task_execution1.day,
+            date(2001, 2, 1))
+
     def test_explicit_creation(self):
         """
         Test the explicit creation of a new task execution.
