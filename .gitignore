@@ -59,15 +59,6 @@ docs/_build/
 # PyBuilder
 target/
 
-node_modules
-package-lock.json
-
-# unicode
-categories.json
-confusables.json
-!vendor/unicode/categories.json
-!vendor/unicode/confusables.json
-
 .idea
 db.sqlite3
 todoscheduler/settings.py

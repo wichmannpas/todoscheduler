@@ -24,23 +24,6 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Europe/Berlin'
 
-# Email configuration
-DEFAULT_FROM_EMAIL = 'TodoScheduler <noreply@todoscheduler>'
-EMAIL_HOST = '127.0.0.1'
-EMAIL_PORT = 25
-# EMAIL_HOST_USER = 'foobar123'
-# MAIL_HOST_PASSWORD = 'foobar123'
-# EMAIL_USE_TLS = True
-# EMAIL_USE_SSL = False
-
-USE_IMPRINT = True
-IMPRINT_ADDRESS = '''John Doe
-Foostreet 42
-12345 City
-Foobarcountry'''
-
-STATIC_ROOT = os.path.join(BASE_DIR, '_static')  # NOQA: F405
-
 # CORS headers
 
 CORS_ORIGIN_WHITELIST = (
