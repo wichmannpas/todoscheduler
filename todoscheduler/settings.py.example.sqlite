@@ -40,3 +40,10 @@ Foostreet 42
 Foobarcountry'''
 
 STATIC_ROOT = os.path.join(BASE_DIR, '_static')  # NOQA: F405
+
+# CORS headers
+
+CORS_ORIGIN_WHITELIST = (
+    '127.0.0.1:8000',
+    '127.0.0.1:8080',
+)
