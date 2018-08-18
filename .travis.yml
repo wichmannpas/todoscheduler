@@ -1,10 +1,5 @@
 language: python
-addons:
-  chrome: stable
-cache:
-  - pip: true
-  - bundler: true
-  - node_modules # NPM packages
+cache: pip
 
 python:
   - 3.4
@@ -26,37 +21,17 @@ install:
   - pip install -r requirements-testing.txt
   - pip install codecov
   - sh -c "if [ '$DB' = 'postgres' ]; then pip install psycopg2-binary; fi"
-  - wget -N http://chromedriver.storage.googleapis.com/2.37/chromedriver_linux64.zip -P ~/
-  - unzip ~/chromedriver_linux64.zip -d ~/
-  - rm ~/chromedriver_linux64.zip
-  - sudo mv -f ~/chromedriver /usr/local/share/
-  - sudo chmod +x /usr/local/share/chromedriver
-  - sudo ln -s /usr/local/share/chromedriver /usr/local/bin/chromedriver
 
 before_script:
   - cp todoscheduler/settings.py.example.${DB} todoscheduler/settings.py
-  - cp vendor/unicode/categories.json categories.json
-  - cp vendor/unicode/confusables.json confusables.json
   - psql -c "CREATE USER todoscheduler WITH ENCRYPTED PASSWORD 'todoscheduler' CREATEDB;" -U postgres
 
 script:
   - flake8
-  - ./build_client
-  - ./manage.py collectstatic --no-input
-  - NO_BUILD_CLIENT=1 coverage run manage.py test
+  - coverage run manage.py test
 
 after_success:
   - codecov
-  - tar -czf static.tar.gz _static
-
-deploy:
-  provider: releases
-  api_key:
-    secure: nGB7fItdT7oY+D+POr27XhE5SJiCVPmcviMidbYJsWrcsMa00rVp4rTpBNdvBTqkK7LxnPh8HFeeSEDqdF/xxdec2fEvpYniqKsLC36X/odP5v1aFNmIzLlYfsvnGsprwTNfurjr4uAhjGc6lmkY63s/LmRuOUfF7t5phSbQTuecs6iHF7P6/ziOMbR0vSIvN2BmqllGr1GTLgc35xLX68hU0nYQt6786BRNb++v5ct0R4MAf+/R7Dzi438eDsggBhbN5WKry3Z4/+zSIEwFSu6enn3VBdYpWCciXI1lHamXIvEFHuBFCkgDnb+1+TeR+JqbX69x9MERH26goUuzRpwfGp3TM9+Kw4SbjkEaPNB5dtz2AZamndUlltaQ7N8Wj/Dx8VbWCXsRLr0KF20PTBHyHxMc7KD92EXTNzAE8AdARMDQ+y46Nk2QECLJLzsHJ7E3QpfCEW/E1qPd+zD/7njmUs0yFGUzPWQGoS+26jF7oeDT8hdU1N2FEHdTSKgksXIG3NNipX1pvxCmqXSEeYc765z2ZeVaa9GonRQ5LofpRY3QANpVS9Mh+D+LNx4zXqfNlYELN5sSp18q0XAH35KjbdTvH9KFZyi9PjbS6wSaLq+WERQgAcqLY7JHFrfiehsbbLwNohaHgmT2Aj2npsYYks3bL3k5nhRmvGuNFpE=
-  file: static.tar.gz
-  skip_cleanup: true
-  on:
-    tags: true
 
 matrix:
   allow_failures:

@@ -21,7 +21,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INSTALLED_APPS = [
     'api',
     'base',
-    'client',
     'task',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -29,7 +28,6 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
@@ -52,12 +50,7 @@ ROOT_URLCONF = 'todoscheduler.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            os.path.join(
-                BASE_DIR,
-                'client/dist'
-            )
-        ],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -65,11 +58,11 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'base.context_processors.imprint',
             ],
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'todoscheduler.wsgi.application'
 
@@ -108,18 +101,6 @@ USE_L10N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.11/howto/static-files/
-
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    os.path.join(
-        BASE_DIR,
-        'client/dist/static'
-    )
-]
-
-
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 REST_FRAMEWORK = {
@@ -128,5 +109,3 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     )
 }
-
-ACCOUNT_ACTIVATION_DAYS = 7  # One-week activation window
