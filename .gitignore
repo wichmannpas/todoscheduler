@@ -71,3 +71,5 @@ confusables.json
 .idea
 db.sqlite3
 todoscheduler/settings.py
+
+.pyenv
