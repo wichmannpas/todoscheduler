@@ -2,7 +2,6 @@ language: python
 cache: pip
 
 python:
-  - 3.4
   - 3.5
   - 3.6
   - 3.7-dev  # travis seems not ready for stable 3.7 yet
