@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,9 +29,9 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'rest_authtoken',
     'corsheaders',
     'rest_framework',
-    'rest_framework.authtoken',
     'widget_tweaks',
 ]
 
@@ -89,6 +90,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 AUTH_USER_MODEL = 'base.User'
+USER_SERIALIZER = 'base.serializers.UserSerializer'
+
+AUTH_TOKEN_VALIDITY = timedelta(days=1)
 
 
 # Internationalization
@@ -105,7 +109,6 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
-    )
+        'rest_authtoken.auth.AuthTokenAuthentication',
+    ),
 }
