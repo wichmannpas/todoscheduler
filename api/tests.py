@@ -1,7 +1,9 @@
+from base64 import urlsafe_b64encode
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from rest_authtoken.models import AuthToken
 from rest_framework.test import APIClient
 
 
@@ -17,8 +19,7 @@ class AuthenticatedApiTest(TestCase):
         )
         self.user.set_password('foobar123')
         self.user.save()
+        token = urlsafe_b64encode(AuthToken.create_token_for_user(self.user)).decode()
 
         self.client = APIClient()
-        self.client.login(
-            username='johndoe',
-            password='foobar123')
+        self.client.credentials(HTTP_AUTHORIZATION='Token {}'.format(token))
