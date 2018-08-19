@@ -7,6 +7,9 @@ TodoScheduler
 TodoScheduler helps you managing and scheduling your tasks. You can split your tasks into chunks and schedule them for specific days.
 Scheduling all of your tasks means less postponed tasks and a higher productivity. That means more free time!
 
+This repository contains the backend of TodoScheduler (i.e., an API endpoints).
+There is a JavaScript [web client](https://github.com/wichmannpas/todoscheduler-webclient) that can be used as a frontend for TodoScheduler.
+
 Installation
 ------------
 
@@ -35,12 +38,6 @@ Migrate the database:
 
 ```
 ./manage.py migrate
-```
-
-Compile the client-side application:
-
-```
-./build_client
 ```
 
 Run the development server (again, see the official documentation for production-suitable deployments):
