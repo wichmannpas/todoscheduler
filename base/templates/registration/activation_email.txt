@@ -1,9 +1,0 @@
-A new account for TodoScheduler has been requested on {{ site }}.
-
-Use the following link to activate your account.
-
-http{% if request.is_secure %}s{% endif %}://{{ site }}{% url 'registration_activate' activation_key %}
-
-The link expires in {{ expiration_days }} days.
-
-This email was sent automaticlaly. Please do not reply directly.
