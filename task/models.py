@@ -149,10 +149,6 @@ class TaskExecution(models.Model):
     def __str__(self) -> str:
         return '{}: {}'.format(self.task, self.day)
 
-    def overdue(self) -> bool:
-        """Check wheter the execution is overdue."""
-        return self.past and not self.finished
-
     def delete(self, postpone: bool = True):
         """
         Delete this task execution.
@@ -169,11 +165,6 @@ class TaskExecution(models.Model):
                 else:
                     task.save(update_fields=('duration',))
             super().delete()
-
-    @property
-    def past(self) -> bool:
-        """Check wheter the execution lies in the past."""
-        return self.day < date.today()
 
     @staticmethod
     def get_next_day_order(user, day):
