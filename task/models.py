@@ -1,4 +1,4 @@
-from typing import Union
+from typing import List, Union
 
 from datetime import date, timedelta
 from decimal import Decimal
@@ -150,6 +150,42 @@ class TaskChunk(models.Model):
             else:
                 task.save(update_fields=('duration',))
         super().delete()
+
+    @transaction.atomic
+    def split(self, duration: Decimal = 1) -> List['TaskChunk']:
+        """
+        Split this chunk into two, keeping duration for the first
+        chunk and moving the rest into the new chunk.
+
+        Returns a list of all task chunks that have been touched.
+        """
+        assert self.duration > duration
+        assert not self.finished
+
+        relevant_chunks = TaskChunk.objects.filter(
+            task__user_id=self.task.user_id,
+            day=self.day, day_order__gte=self.day_order).order_by(
+            'day_order').select_for_update()
+
+        # force evaluation of queryset
+        relevant_chunks = list(relevant_chunks)
+
+        new_chunk = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day,
+            day_order=self.day_order + 1,
+            duration=self.duration - duration)
+        self.duration = duration
+        self.save(update_fields=('duration',))
+
+        # increase all future day orders
+        for chunk in relevant_chunks:
+            if chunk.pk == self.pk:
+                continue
+            chunk.day_order += 1
+            chunk.save(update_fields=('day_order',))
+
+        return [new_chunk] + relevant_chunks
 
     @staticmethod
     def get_next_day_order(user, day):

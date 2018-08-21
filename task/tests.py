@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
@@ -334,7 +335,7 @@ class TaskViewTest(AuthenticatedApiTest):
             'own task')
 
 
-class TaskChunkViewTest(AuthenticatedApiTest):
+class TaskChunkViewSetTest(AuthenticatedApiTest):
     def setUp(self):
         super().setUp()
 
@@ -345,6 +346,122 @@ class TaskChunkViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Testtask',
             duration=Decimal(2))
+
+    def test_split_task_chunk(self):
+        """Test splitting a task chunk."""
+        chunk = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day,
+            day_order=0,
+            duration=Decimal(3))
+
+        resp = self.client.post('/task/chunk/{}/split/'.format(chunk.pk))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            2)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            2)
+
+        chunk.refresh_from_db()
+        self.assertEqual(
+            chunk.duration,
+            Decimal(1))
+        self.assertEqual(
+            chunk.day_order,
+            0)
+
+        new_chunk = TaskChunk.objects.get(~Q(pk=chunk.pk))
+        self.assertEqual(
+            new_chunk.duration,
+            Decimal(2))
+        self.assertEqual(
+            new_chunk.day_order,
+            1)
+
+    def test_split_task_chunk_custom_duration(self):
+        """Test splitting a task chunk."""
+        chunk = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day,
+            day_order=0,
+            duration=Decimal(1))
+
+        resp = self.client.post('/task/chunk/{}/split/?duration=0.3'.format(chunk.pk))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            2)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            2)
+
+        chunk.refresh_from_db()
+        self.assertEqual(
+            chunk.duration,
+            Decimal('0.3'))
+        self.assertEqual(
+            chunk.day_order,
+            0)
+
+        new_chunk = TaskChunk.objects.get(~Q(pk=chunk.pk))
+        self.assertEqual(
+            new_chunk.duration,
+            Decimal('0.7'))
+        self.assertEqual(
+            new_chunk.day_order,
+            1)
+
+    def test_split_task_chunk_invalid(self):
+        """Test splitting a task chunk."""
+        chunk = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day,
+            day_order=0,
+            duration=Decimal(1))
+
+        # no duration left for split
+        resp = self.client.post('/task/chunk/{}/split/'.format(chunk.pk))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'duration'})
+
+        resp = self.client.post('/task/chunk/{}/split/?duration=2'.format(chunk.pk))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'duration'})
+
+        resp = self.client.post('/task/chunk/{}/split/?duration=invalid'.format(chunk.pk))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'duration'})
+
+        chunk.finished = True
+        chunk.save()
+
+        resp = self.client.post('/task/chunk/{}/split/'.format(chunk.pk))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            resp.data['detail'],
+            'finished chunks can not be split')
 
     def test_finish_task_chunk(self):
         """Test finishing a task chunk."""
@@ -1646,6 +1763,136 @@ class TaskChunkTest(TestCase):
         self.assertEqual(
             str(chunk),
             'johndoe: Testtask: 2018-12-24')
+
+    def test_split_chunk(self):
+        """
+        Test splitting a task chunk.
+        """
+        task = Task.objects.create(
+            name='Testtask',
+            user=self.user1,
+            duration=5)
+
+        chunk = TaskChunk.objects.create(
+            task=task,
+            day=date(2018, 12, 24),
+            duration=3,
+            day_order=0)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            1)
+
+        affected_chunks = chunk.split()
+        self.assertEqual(
+            len(affected_chunks),
+            2)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            2)
+
+        chunk.refresh_from_db()
+        split_chunk = TaskChunk.objects.get(~Q(pk=chunk.pk))
+
+        self.assertEqual(
+            chunk.day_order,
+            0)
+        self.assertEqual(
+            chunk.duration,
+            Decimal(1))
+        self.assertEqual(
+            split_chunk.day_order,
+            1)
+        self.assertEqual(
+            split_chunk.duration,
+            Decimal(2))
+
+    def test_split_chunk_with_existing(self):
+        """
+        Test splitting a task chunk.
+        """
+        task = Task.objects.create(
+            name='Testtask',
+            user=self.user1,
+            duration=5)
+        task2 = Task.objects.create(
+            name='Other Testtask',
+            user=self.user1,
+            duration=5)
+        task3 = Task.objects.create(
+            name='Yet Other Testtask',
+            user=self.user1,
+            duration=5)
+
+        chunk0 = TaskChunk.objects.create(
+            task=task2,
+            day=date(2018, 12, 24),
+            duration=3,
+            day_order=0)
+
+        chunk = TaskChunk.objects.create(
+            task=task,
+            day=date(2018, 12, 24),
+            duration=3,
+            day_order=1)
+
+        chunk2 = TaskChunk.objects.create(
+            task=task3,
+            day=date(2018, 12, 24),
+            duration=3,
+            day_order=2)
+
+        chunk3 = TaskChunk.objects.create(
+            task=task3,
+            day=date(2018, 12, 24),
+            duration=3,
+            day_order=3)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            4)
+
+        affected_chunks = chunk.split()
+        self.assertEqual(
+            len(affected_chunks),
+            4)  # first chunk is not affected
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            5)
+
+        chunk0.refresh_from_db()
+        chunk.refresh_from_db()
+        chunk2.refresh_from_db()
+        chunk3.refresh_from_db()
+        split_chunk = TaskChunk.objects.get(
+            ~Q(pk__in={
+                chunk0.pk, chunk.pk, chunk2.pk, chunk3.pk
+            }))
+
+        self.assertEqual(
+            chunk0.day_order,
+            0)
+        self.assertEqual(
+            chunk2.day_order,
+            3)
+        self.assertEqual(
+            chunk3.day_order,
+            4)
+
+        self.assertEqual(
+            chunk.day_order,
+            1)
+        self.assertEqual(
+            chunk.duration,
+            Decimal(1))
+        self.assertEqual(
+            split_chunk.day_order,
+            2)
+        self.assertEqual(
+            split_chunk.duration,
+            Decimal(2))
 
     @freeze_time('2017-11-16')
     def test_missed_task_chunks(self):

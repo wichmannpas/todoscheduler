@@ -1,4 +1,6 @@
 from django.db.models import F
+from rest_framework.decorators import action
+from rest_framework.exceptions import ParseError, ValidationError
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -38,3 +40,30 @@ class TaskChunkViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
         instance = self.get_object()
         instance.delete(postpone=params.validated_data['postpone'])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(['POST'], detail=True)
+    def split(self, request, pk=None):
+        """
+        Split a task chunk into two.
+        """
+        instance = self.get_object()
+
+        class ParameterSerializer(serializers.Serializer):
+            duration = serializers.DecimalField(
+                max_digits=4, decimal_places=2, default=1)
+        params = ParameterSerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+
+        if instance.finished:
+            raise ParseError('finished chunks can not be split')
+
+        duration = params.validated_data['duration']
+
+        if instance.duration <= duration:
+            raise ValidationError({
+                'duration': 'no duration remains for split'
+            })
+
+        serializer = self.get_serializer(
+            instance.split(duration), many=True)
+        return Response(serializer.data)
