@@ -260,10 +260,15 @@ class TaskViewTest(AuthenticatedApiTest):
         """
         Test the filtering for incomplete tasks.
         """
-        Task.objects.create(
+        task = Task.objects.create(
             user=self.user,
             name='Testtask',
             duration=Decimal(2))
+        TaskExecution.objects.create(
+            task=task,
+            day=date(2010, 5, 14),
+            duration=Decimal(2))
+
         Task.objects.create(
             user=self.user,
             name='Second Testtask',
@@ -284,6 +289,14 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             len(resp.data),
             2)
+
+        resp = self.client.get('/task/task/?incomplete')
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            1)
 
     def test_no_listing_of_foreign_tasks(self):
         """
@@ -1347,17 +1360,17 @@ class TaskTest(TestCase):
 
     def test_incomplete_tasks(self):
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user1)),
+            set(self.user1.tasks.filter_incomplete()),
             set())
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user2)),
+            set(self.user2.tasks.filter_incomplete()),
             set())
         task1 = Task.objects.create(user=self.user1, duration=2)
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user1)),
+            set(self.user1.tasks.filter_incomplete()),
             {task1})
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user2)),
+            set(self.user2.tasks.filter_incomplete()),
             set())
         exec1 = TaskExecution.objects.create(
             task=task1,
@@ -1366,10 +1379,10 @@ class TaskTest(TestCase):
             duration=1,
             finished=False)
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user1)),
+            set(self.user1.tasks.filter_incomplete()),
             {task1})
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user2)),
+            set(self.user2.tasks.filter_incomplete()),
             set())
         exec2 = TaskExecution.objects.create(
             task=task1,
@@ -1378,26 +1391,26 @@ class TaskTest(TestCase):
             duration=1,
             finished=False)
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user1)),
+            set(self.user1.tasks.filter_incomplete()),
             set())
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user2)),
+            set(self.user2.tasks.filter_incomplete()),
             set())
         exec2.finished = True
         exec2.save()
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user1)),
+            set(self.user1.tasks.filter_incomplete()),
             set())
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user2)),
+            set(self.user2.tasks.filter_incomplete()),
             set())
         exec1.finished = True
         exec1.save()
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user1)),
+            set(self.user1.tasks.filter_incomplete()),
             set())
         self.assertEqual(
-            set(Task.incomplete_tasks(self.user2)),
+            set(self.user2.tasks.filter_incomplete()),
             set())
 
     def test_default_schedule_duration(self):

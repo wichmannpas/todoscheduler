@@ -4,19 +4,18 @@ from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .filters import TaskExecutionFilterBackend
-from .models import Task, TaskExecution
+from .filters import TaskExecutionFilterBackend, TaskFilterBackend
+from .models import TaskExecution
 from .serializers import TaskSerializer, TaskExecutionSerializer
 
 
 class TaskViewSet(viewsets.ModelViewSet):
+    filter_backends = TaskFilterBackend,
     permission_classes = (IsAuthenticated,)
     serializer_class = TaskSerializer
 
     def get_queryset(self):
         queryset = self.request.user.tasks.all()
-        if 'incomplete' in self.request.query_params:
-            queryset = Task.incomplete_tasks(self.request.user)
 
         return queryset.order_by(F('start').asc(nulls_first=True), 'name')
 

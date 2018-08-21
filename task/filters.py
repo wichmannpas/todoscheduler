@@ -2,6 +2,18 @@ from rest_framework import filters, serializers
 from rest_framework.exceptions import ValidationError
 
 
+class TaskFilterBackend(filters.BaseFilterBackend):
+    """
+    A filter for tasks.
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        if 'incomplete' in request.query_params:
+            queryset = queryset.filter_incomplete()
+
+        return queryset
+
+
 class TaskExecutionFilterParamsSerializer(serializers.Serializer):
     min_date = serializers.DateField(required=False)
     max_date = serializers.DateField(required=False)
