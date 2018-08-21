@@ -7,7 +7,7 @@ from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
 
-from api.tests import AuthenticatedApiTest
+from base.tests import AuthenticatedApiTest
 from .day import Day
 from .models import Task, TaskExecution
 
@@ -252,7 +252,7 @@ class TaskViewTest(AuthenticatedApiTest):
         """
         Test the creation of a new task.
         """
-        resp = self.client.post('/api/tasks/task/', {
+        resp = self.client.post('/task/task/', {
             'name': 'Testtask',
             'duration': '2.5',
         })
@@ -279,7 +279,7 @@ class TaskViewTest(AuthenticatedApiTest):
         """
         Test the creation of a new task with an invalid duration.
         """
-        resp = self.client.post('/api/tasks/task/', {
+        resp = self.client.post('/task/task/', {
             'name': 'Testtask',
             'duration': '-2',
         })
@@ -305,7 +305,7 @@ class TaskViewTest(AuthenticatedApiTest):
             day=date(2000, 1, 2),
             day_order=0,
             duration=Decimal(1))
-        resp = self.client.patch('/api/tasks/task/{}/'.format(task.pk), {
+        resp = self.client.patch('/task/task/{}/'.format(task.pk), {
             'duration': '0.5',
         })
         self.assertEqual(
@@ -330,7 +330,7 @@ class TaskViewTest(AuthenticatedApiTest):
             day=date(2000, 1, 2),
             day_order=0,
             duration=Decimal('0.5'))
-        resp = self.client.patch('/api/tasks/task/{}/'.format(task.pk), {
+        resp = self.client.patch('/task/task/{}/'.format(task.pk), {
             'duration': '0.5',
         })
         self.assertEqual(
@@ -350,7 +350,7 @@ class TaskViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Testtask',
             duration=Decimal(2))
-        resp = self.client.get('/api/tasks/task/{}/'.format(task.id))
+        resp = self.client.get('/task/task/{}/'.format(task.id))
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
@@ -373,7 +373,7 @@ class TaskViewTest(AuthenticatedApiTest):
             user=foreign_user,
             name='Testtask',
             duration=Decimal(2))
-        resp = self.client.get('/api/tasks/task/{}/'.format(task.id))
+        resp = self.client.get('/task/task/{}/'.format(task.id))
         self.assertEqual(
             resp.status_code,
             status.HTTP_404_NOT_FOUND)
@@ -386,7 +386,7 @@ class TaskViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Testtask',
             duration=Decimal(2))
-        resp = self.client.delete('/api/tasks/task/{}/'.format(task.id))
+        resp = self.client.delete('/task/task/{}/'.format(task.id))
         self.assertEqual(
             resp.status_code,
             status.HTTP_204_NO_CONTENT)
@@ -403,7 +403,7 @@ class TaskViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Testtask',
             duration=Decimal(2))
-        resp = self.client.patch('/api/tasks/task/{}/'.format(task.id), {
+        resp = self.client.patch('/task/task/{}/'.format(task.id), {
             'name': 'Renamed testtask',
         })
         self.assertEqual(
@@ -414,7 +414,7 @@ class TaskViewTest(AuthenticatedApiTest):
             task.name,
             'Renamed testtask')
 
-        resp = self.client.put('/api/tasks/task/{}/'.format(task.id), {
+        resp = self.client.put('/task/task/{}/'.format(task.id), {
             'name': 'Renamed testtask',
             'duration': '42',
         })
@@ -442,7 +442,7 @@ class TaskViewTest(AuthenticatedApiTest):
             name='Second Testtask',
             duration=Decimal(3))
 
-        resp = self.client.get('/api/tasks/task/')
+        resp = self.client.get('/task/task/')
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
@@ -475,7 +475,7 @@ class TaskViewTest(AuthenticatedApiTest):
             duration=Decimal(3),
             start=date(2001, 2, 9))
 
-        resp = self.client.get('/api/tasks/task/')
+        resp = self.client.get('/task/task/')
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
@@ -512,7 +512,7 @@ class TaskViewTest(AuthenticatedApiTest):
             name='Foreign Testtask',
             duration=Decimal(3))
 
-        resp = self.client.get('/api/tasks/task/')
+        resp = self.client.get('/task/task/')
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
@@ -542,7 +542,7 @@ class TaskViewTest(AuthenticatedApiTest):
             name='own task',
             duration=2)
 
-        resp = self.client.get('/api/tasks/task/')
+        resp = self.client.get('/task/task/')
         self.assertEqual(
             len(resp.data),
             1)
@@ -550,7 +550,7 @@ class TaskViewTest(AuthenticatedApiTest):
             resp.data[0]['name'],
             'own task')
 
-        resp = self.client.get('/api/tasks/task/?incomplete')
+        resp = self.client.get('/task/task/?incomplete')
         self.assertEqual(
             len(resp.data),
             1)
@@ -583,7 +583,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             task_execution.finished,
             False)
 
-        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
             'finished': True,
         })
         self.assertEqual(
@@ -608,7 +608,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             task_execution.finished,
             True)
 
-        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
             'finished': False,
         })
         self.assertEqual(
@@ -628,7 +628,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             day_order=0,
             duration=Decimal(1))
 
-        resp = self.client.delete('/api/tasks/taskexecution/{}/?postpone=0'.format(task_execution.pk))
+        resp = self.client.delete('/task/taskexecution/{}/?postpone=0'.format(task_execution.pk))
         self.assertEqual(
             resp.status_code,
             status.HTTP_204_NO_CONTENT)
@@ -654,7 +654,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             day_order=0,
             duration=Decimal(2))
 
-        resp = self.client.delete('/api/tasks/taskexecution/{}/?postpone=0'.format(task_execution.pk))
+        resp = self.client.delete('/task/taskexecution/{}/?postpone=0'.format(task_execution.pk))
         self.assertEqual(
             resp.status_code,
             status.HTTP_204_NO_CONTENT)
@@ -674,7 +674,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             day_order=0,
             duration=Decimal(1))
 
-        resp = self.client.delete('/api/tasks/taskexecution/{}/?postpone=1'.format(task_execution.pk))
+        resp = self.client.delete('/task/taskexecution/{}/?postpone=1'.format(task_execution.pk))
         self.assertEqual(
             resp.status_code,
             status.HTTP_204_NO_CONTENT)
@@ -703,7 +703,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             task_execution.finished,
             True)
 
-        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
             'duration': 4,
         })
         self.assertEqual(
@@ -719,7 +719,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             self.task.duration,
             Decimal(5))  # 2 + (4 - 1)
 
-        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
             'duration': '0.5',
         })
         self.assertEqual(
@@ -750,7 +750,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             task_execution.finished,
             True)
 
-        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
             'duration': -4,
         })
         self.assertEqual(
@@ -777,7 +777,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             day_order=2
         )
 
-        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution1.pk), {
             'day_order': 2,
         })
         self.assertEqual(
@@ -792,7 +792,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             task_execution2.day_order,
             1)
 
-        resp = self.client.put('/api/tasks/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.put('/task/taskexecution/{}/'.format(task_execution1.pk), {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': 1,
@@ -829,7 +829,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             day_order=1
         )
 
-        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution1.pk), {
             'day': '2001-02-04',
         })
         self.assertEqual(
@@ -848,7 +848,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             1)
 
         # provided day order should be ignored
-        resp = self.client.put('/api/tasks/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.put('/task/taskexecution/{}/'.format(task_execution1.pk), {
             'task_id': self.task.id,
             'day': '2001-02-01',
             'duration': 1,
@@ -869,7 +869,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             task_execution2.day_order,
             1)
 
-        resp = self.client.patch('/api/tasks/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution1.pk), {
             'day': '2001-02-01',
         })
         self.assertEqual(
@@ -887,7 +887,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         """
         Test the explicit creation of a new task execution.
         """
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'day_order': 0,
@@ -921,7 +921,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         Test the explicit creation of a new task execution with a duration longer
         than the task duration. The task duration should be increased.
         """
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'day_order': 0,
@@ -955,7 +955,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         Test that the day order is set correctly when explicitly
         creating multiple task executions without specifying a day order.
         """
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': '0.5',
@@ -966,7 +966,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         task_execution1 = TaskExecution.objects.get(
             pk=resp.data['id'])
 
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': '2001-02-04',
             'duration': '0.5',
@@ -977,7 +977,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         task_execution2 = TaskExecution.objects.get(
             pk=resp.data['id'])
 
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': '0.1',
@@ -988,7 +988,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         task_execution3 = TaskExecution.objects.get(
             pk=resp.data['id'])
 
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': '0.1',
@@ -1022,7 +1022,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             duration=Decimal(1),
             finished=True)
 
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': 5,
@@ -1050,7 +1050,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
     @freeze_time('2001-02-03')
     def test_schedule_for_today(self):
         """Test scheduling for current day."""
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': 'today',
             'duration': 2,
@@ -1078,7 +1078,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
     @freeze_time('2001-02-03')
     def test_schedule_for_tomorrow(self):
         """Test scheduling for the next day."""
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': 'tomorrow',
             'duration': 2,
@@ -1126,7 +1126,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.task.duration = 10
         self.task.save()
 
-        resp = self.client.post('/api/tasks/taskexecution/', {
+        resp = self.client.post('/task/taskexecution/', {
             'task_id': self.task.id,
             'day': 'next_free_capacity',
             'duration': 9,
