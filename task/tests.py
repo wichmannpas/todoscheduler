@@ -996,6 +996,17 @@ class TaskChunkViewTest(AuthenticatedApiTest):
         self.task.save()
 
         resp = self.client.post('/task/chunk/', {
+            'task_id': task2.pk,
+            'day': 'next_free_capacity',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'day'})
+
+        resp = self.client.post('/task/chunk/', {
             'day': 'next_free_capacity',
             'duration': 9,
         })
