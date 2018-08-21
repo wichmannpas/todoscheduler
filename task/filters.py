@@ -14,7 +14,7 @@ class TaskFilterBackend(filters.BaseFilterBackend):
         return queryset
 
 
-class TaskExecutionFilterParamsSerializer(serializers.Serializer):
+class TaskChunkFilterParamsSerializer(serializers.Serializer):
     min_date = serializers.DateField(required=False)
     max_date = serializers.DateField(required=False)
     task_ids = serializers.ListField(
@@ -34,14 +34,14 @@ class TaskExecutionFilterParamsSerializer(serializers.Serializer):
         return validated_data
 
 
-class TaskExecutionFilterBackend(filters.BaseFilterBackend):
+class TaskChunkFilterBackend(filters.BaseFilterBackend):
     """
-    A filter for task executions.
-    It allows to filter by the day of the task execution and by the task.
+    A filter for task chunks.
+    It allows to filter by the day of the task chunk and by the task.
     """
 
     def filter_queryset(self, request, queryset, view):
-        params = TaskExecutionFilterParamsSerializer(data=request.query_params)
+        params = TaskChunkFilterParamsSerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
 
         min_date = params.validated_data.get('min_date')
