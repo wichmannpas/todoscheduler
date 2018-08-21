@@ -8,7 +8,6 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'username',
-            'email',
             'workhours_weekday',
             'workhours_weekend',
             'default_schedule_duration',

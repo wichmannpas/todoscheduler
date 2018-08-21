@@ -132,8 +132,7 @@ class TaskViewTest(AuthenticatedApiTest):
         This is expected to be not found.
         """
         foreign_user = get_user_model().objects.create(
-            username='foreign',
-            email='ff')
+            username='foreign')
         task = Task.objects.create(
             user=foreign_user,
             name='Testtask',
@@ -275,8 +274,7 @@ class TaskViewTest(AuthenticatedApiTest):
             duration=Decimal(3))
 
         foreign_user = get_user_model().objects.create(
-            username='foreign',
-            email='ff')
+            username='foreign')
         Task.objects.create(
             user=foreign_user,
             name='Foreign Testtask',
@@ -304,7 +302,6 @@ class TaskViewTest(AuthenticatedApiTest):
         """
         other_user = get_user_model().objects.create(
             username='other',
-            email='b',
             workhours_weekday=Decimal(10),
             workhours_weekend=Decimal(5),
             default_schedule_duration=Decimal(1),
@@ -1226,7 +1223,6 @@ class TaskTest(TestCase):
     def setUp(self):
         self.user1 = get_user_model().objects.create(
             username='johndoe',
-            email='a',
             workhours_weekday=Decimal(10),
             workhours_weekend=Decimal(5),
             default_schedule_duration=Decimal(1),
@@ -1234,7 +1230,6 @@ class TaskTest(TestCase):
         )
         self.user2 = get_user_model().objects.create(
             username='foobar',
-            email='b',
             default_schedule_duration=Decimal(2),
             default_schedule_full_duration_max=Decimal(5),
         )
@@ -1528,7 +1523,6 @@ class TaskExecutionTest(TestCase):
     def setUp(self):
         self.user1 = get_user_model().objects.create(
             username='johndoe',
-            email='a',
             workhours_weekday=Decimal(10),
             workhours_weekend=Decimal(5),
             default_schedule_duration=Decimal(1),
@@ -1536,7 +1530,6 @@ class TaskExecutionTest(TestCase):
         )
         self.user2 = get_user_model().objects.create(
             username='foobar',
-            email='b',
             default_schedule_duration=Decimal(2),
             default_schedule_full_duration_max=Decimal(5),
         )
