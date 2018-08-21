@@ -16,13 +16,9 @@ class TaskSerializer(serializers.ModelSerializer):
             'name',
             'duration',
             'start',
-            'incomplete_duration',
             'scheduled_duration',
             'finished_duration',
-            'default_schedule_duration',
         )
-    default_schedule_duration = serializers.DecimalField(
-        max_digits=5, decimal_places=2, read_only=True)
     scheduled_duration = serializers.DecimalField(
         max_digits=5, decimal_places=2, read_only=True)
     finished_duration = serializers.DecimalField(
@@ -118,7 +114,7 @@ class TaskChunkSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             if 'duration' in validated_data:
                 task = Task.objects.get(pk=validated_data['task_id'])
-                duration_delta = validated_data['duration'] - task.incomplete_duration
+                duration_delta = validated_data['duration'] - task.unscheduled_duration
                 if duration_delta > 0:
                     task.duration += duration_delta
                     task.save()

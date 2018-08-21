@@ -9,7 +9,7 @@ class TaskFilterBackend(filters.BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         if 'incomplete' in request.query_params:
-            queryset = queryset.filter_incomplete()
+            queryset = queryset.incompletely_scheduled()
 
         return queryset
 

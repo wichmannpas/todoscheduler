@@ -1340,6 +1340,31 @@ class TaskTest(TestCase):
 
         self.weekdaydate1 = date(2017, 11, 6)
 
+    def test_state(self):
+        task = Task.objects.create(user=self.user1, duration=10)
+        self.assertFalse(task.completely_scheduled)
+        self.assertFalse(task.finished)
+        chunk1 = TaskChunk.objects.create(
+            task=task,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=4,
+            finished=False)
+        self.assertFalse(task.completely_scheduled)
+        self.assertFalse(task.finished)
+        TaskChunk.objects.create(
+            task=task,
+            day=self.weekdaydate1 + timedelta(days=1),
+            day_order=0,
+            duration=6,
+            finished=True)
+        self.assertTrue(task.completely_scheduled)
+        self.assertFalse(task.finished)
+        chunk1.finished = True
+        chunk1.save()
+        self.assertTrue(task.completely_scheduled)
+        self.assertTrue(task.finished)
+
     def test_finished_duration(self):
         task1 = Task.objects.create(user=self.user1, duration=42)
         self.assertEqual(
@@ -1378,6 +1403,45 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.finished_duration,
             2)
+
+    def test_unfinished_duration(self):
+        task1 = Task.objects.create(user=self.user1, duration=42)
+        self.assertEqual(
+            task1.unfinished_duration,
+            Decimal(42))
+        chunk1 = TaskChunk.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=4,
+            finished=False)
+        self.assertEqual(
+            task1.unfinished_duration,
+            Decimal(42))
+        chunk1.finished = True
+        chunk1.save()
+        self.assertEqual(
+            task1.unfinished_duration,
+            Decimal(38))
+        chunk2 = TaskChunk.objects.create(
+            task=task1,
+            day=self.weekdaydate1,
+            day_order=0,
+            duration=2,
+            finished=False)
+        self.assertEqual(
+            task1.unfinished_duration,
+            Decimal(38))
+        chunk2.finished = True
+        chunk2.save()
+        self.assertEqual(
+            task1.unfinished_duration,
+            Decimal(36))
+        chunk1.finished = False
+        chunk1.save()
+        self.assertEqual(
+            task1.unfinished_duration,
+            Decimal(40))
 
     def test_scheduled_duration(self):
         task1 = Task.objects.create(user=self.user1, duration=42)
@@ -1418,10 +1482,10 @@ class TaskTest(TestCase):
             task1.scheduled_duration,
             6)
 
-    def test_incomplete_duration(self):
+    def test_unscheduled_duration(self):
         task1 = Task.objects.create(user=self.user1, duration=42)
         self.assertEqual(
-            task1.incomplete_duration,
+            task1.unscheduled_duration,
             42)
         chunk1 = TaskChunk.objects.create(
             task=task1,
@@ -1430,12 +1494,12 @@ class TaskTest(TestCase):
             duration=4,
             finished=False)
         self.assertEqual(
-            task1.incomplete_duration,
+            task1.unscheduled_duration,
             38)
         chunk1.finished = True
         chunk1.save()
         self.assertEqual(
-            task1.incomplete_duration,
+            task1.unscheduled_duration,
             38)
         chunk2 = TaskChunk.objects.create(
             task=task1,
@@ -1444,32 +1508,32 @@ class TaskTest(TestCase):
             duration=2,
             finished=False)
         self.assertEqual(
-            task1.incomplete_duration,
+            task1.unscheduled_duration,
             36)
         chunk2.finished = True
         chunk2.save()
         self.assertEqual(
-            task1.incomplete_duration,
+            task1.unscheduled_duration,
             36)
         chunk1.finished = False
         chunk1.save()
         self.assertEqual(
-            task1.incomplete_duration,
+            task1.unscheduled_duration,
             36)
 
-    def test_incomplete_tasks(self):
+    def test_incompletely_scheduled_tasks(self):
         self.assertEqual(
-            set(self.user1.tasks.filter_incomplete()),
+            set(self.user1.tasks.incompletely_scheduled()),
             set())
         self.assertEqual(
-            set(self.user2.tasks.filter_incomplete()),
+            set(self.user2.tasks.incompletely_scheduled()),
             set())
         task1 = Task.objects.create(user=self.user1, duration=2)
         self.assertEqual(
-            set(self.user1.tasks.filter_incomplete()),
+            set(self.user1.tasks.incompletely_scheduled()),
             {task1})
         self.assertEqual(
-            set(self.user2.tasks.filter_incomplete()),
+            set(self.user2.tasks.incompletely_scheduled()),
             set())
         chunk1 = TaskChunk.objects.create(
             task=task1,
@@ -1478,10 +1542,10 @@ class TaskTest(TestCase):
             duration=1,
             finished=False)
         self.assertEqual(
-            set(self.user1.tasks.filter_incomplete()),
+            set(self.user1.tasks.incompletely_scheduled()),
             {task1})
         self.assertEqual(
-            set(self.user2.tasks.filter_incomplete()),
+            set(self.user2.tasks.incompletely_scheduled()),
             set())
         chunk2 = TaskChunk.objects.create(
             task=task1,
@@ -1490,87 +1554,27 @@ class TaskTest(TestCase):
             duration=1,
             finished=False)
         self.assertEqual(
-            set(self.user1.tasks.filter_incomplete()),
+            set(self.user1.tasks.incompletely_scheduled()),
             set())
         self.assertEqual(
-            set(self.user2.tasks.filter_incomplete()),
+            set(self.user2.tasks.incompletely_scheduled()),
             set())
         chunk2.finished = True
         chunk2.save()
         self.assertEqual(
-            set(self.user1.tasks.filter_incomplete()),
+            set(self.user1.tasks.incompletely_scheduled()),
             set())
         self.assertEqual(
-            set(self.user2.tasks.filter_incomplete()),
+            set(self.user2.tasks.incompletely_scheduled()),
             set())
         chunk1.finished = True
         chunk1.save()
         self.assertEqual(
-            set(self.user1.tasks.filter_incomplete()),
+            set(self.user1.tasks.incompletely_scheduled()),
             set())
         self.assertEqual(
-            set(self.user2.tasks.filter_incomplete()),
+            set(self.user2.tasks.incompletely_scheduled()),
             set())
-
-    def test_default_schedule_duration(self):
-        task = Task.objects.create(
-            name='testtask',
-            user=self.user1,
-            duration=Decimal(42),
-        )
-        chunk = TaskChunk.objects.create(
-            task=task,
-            day=self.weekdaydate1,
-            day_order=1,
-            duration=0,
-        )
-        chunk.duration = Decimal(42) - Decimal(42)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(1))
-        chunk.duration = Decimal(42) - Decimal(13)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(1))
-        chunk.duration = Decimal(42) - Decimal(3)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(3))
-        chunk.duration = Decimal(42) - Decimal('2.5')
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal('2.5'))
-        chunk.duration = Decimal(42) - Decimal('1.5')
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal('1.5'))
-        chunk.duration = Decimal(42) - Decimal('0.5')
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal('0.5'))
-        chunk.duration = Decimal(42) - Decimal(0)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(0))
-
-        task.user = self.user2
-        chunk.duration = Decimal(42) - Decimal(42)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(2))
-        chunk.duration = Decimal(42) - Decimal(13)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(2))
-        chunk.duration = Decimal(42) - Decimal(5)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(5))
-        chunk.duration = Decimal(42) - Decimal(3)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(3))
-        chunk.duration = Decimal(42) - Decimal('2.5')
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal('2.5'))
-        chunk.duration = Decimal(42) - Decimal('1.5')
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal('1.5'))
-        chunk.duration = Decimal(42) - Decimal('0.5')
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal('0.5'))
-        chunk.duration = Decimal(42) - Decimal(0)
-        chunk.save()
-        self.assertEqual(task.default_schedule_duration, Decimal(0))
 
     def test_duration_types(self):
         task1 = Task.objects.create(user=self.user1, duration=42)
@@ -1581,7 +1585,7 @@ class TaskTest(TestCase):
             task1.scheduled_duration,
             Decimal)
         self.assertIsInstance(
-            task1.incomplete_duration,
+            task1.unscheduled_duration,
             Decimal)
         TaskChunk.objects.create(
             task=task1,
@@ -1596,7 +1600,7 @@ class TaskTest(TestCase):
             task1.scheduled_duration,
             Decimal)
         self.assertIsInstance(
-            task1.incomplete_duration,
+            task1.unscheduled_duration,
             Decimal)
 
 
