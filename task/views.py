@@ -61,8 +61,7 @@ class TaskExecutionViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin,
         class ParameterSerializer(serializers.Serializer):
             postpone = serializers.BooleanField(default=True)
         params = ParameterSerializer(data=request.query_params)
-        if not params.is_valid():
-            return Response(params.errors, status=status.HTTP_400_BAD_REQUEST)
+        params.is_valid(raise_exception=True)
 
         task_execution = get_object_or_404(self.get_queryset(), pk=pk)
         task_execution.delete(postpone=params.validated_data['postpone'])
