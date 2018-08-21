@@ -1340,6 +1340,12 @@ class TaskTest(TestCase):
 
         self.weekdaydate1 = date(2017, 11, 6)
 
+    def test_str(self):
+        task = Task(user=self.user1, name='Testtask')
+        self.assertEqual(
+            str(task),
+            'johndoe: Testtask')
+
     def test_state(self):
         task = Task.objects.create(user=self.user1, duration=10)
         self.assertFalse(task.completely_scheduled)
@@ -1619,6 +1625,16 @@ class TaskChunkTest(TestCase):
             default_schedule_full_duration_max=Decimal(5),
         )
         self.weekdaydate1 = date(2017, 11, 6)
+
+    def test_str(self):
+        task = Task.objects.create(
+            name='Testtask',
+            user=self.user1)
+
+        chunk = TaskChunk(task=task, day=date(2018, 12, 24))
+        self.assertEqual(
+            str(chunk),
+            'johndoe: Testtask: 2018-12-24')
 
     @freeze_time('2017-11-16')
     def test_missed_task_chunks(self):
