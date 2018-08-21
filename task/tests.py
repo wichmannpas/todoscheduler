@@ -926,6 +926,35 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             self.task.duration,
             Decimal(10))
 
+    @freeze_time('2001-02-03')
+    def test_schedule_next_free_capacity_unavailable(self):
+        """Test scheduling for the next free capacity."""
+        task2 = Task.objects.create(
+            user=self.user,
+            name='Other Testtask',
+            duration=Decimal(30))
+        for offset in range(100):
+            day = self.day + timedelta(days=offset)
+            TaskExecution.objects.create(
+                task=task2,
+                day=day,
+                duration=self.user.capacity_of_day(day))
+
+        self.task.duration = 10
+        self.task.save()
+
+        resp = self.client.post('/task/taskexecution/', {
+            'task_id': self.task.id,
+            'day': 'next_free_capacity',
+            'duration': 5,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'day'})
+
     def test_task_execution_min_filter(self):
         TaskExecution.objects.create(
             task=self.task,

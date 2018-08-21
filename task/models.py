@@ -110,7 +110,7 @@ class Task(models.Model):
                 cur_day = today + timedelta(days=offset)
                 if Task.free_capacity(self.user, cur_day) >= duration:
                     return cur_day
-            # TODO: handle no available free day in range
+            return None
 
         raise ValueError('unknown special_date value: %s' % special_date)
 
