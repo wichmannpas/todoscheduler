@@ -2,5 +2,4 @@ Django<2.2
 django-cors-headers
 django-rest-authtoken>=1
 djangorestframework
-django_widget_tweaks
 typing; python_version <= '3.4'

@@ -20,19 +20,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Application definition
 
 INSTALLED_APPS = [
-    'api',
     'base',
     'task',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.humanize',
     'django.contrib.sessions',
     'django.contrib.messages',
     'rest_authtoken',
     'corsheaders',
     'rest_framework',
-    'widget_tweaks',
 ]
 
 MIDDLEWARE = [

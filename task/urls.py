@@ -1,13 +1,14 @@
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
 from . import views
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register(
-    r'task',
+    'task',
     views.TaskViewSet,
     base_name='task')
 router.register(
-    r'taskexecution',
+    'taskexecution',
     views.TaskExecutionViewSet,
     base_name='task_execution')
+urlpatterns = router.urls
