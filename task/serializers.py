@@ -62,7 +62,7 @@ class DayOrScheduleField(serializers.DateField):
                 return super().to_internal_value(data)
             try:
                 task = self.context['request'].user.tasks.get(pk=task_id)
-            except Task.ObjectDoesNotExist:
+            except Task.DoesNotExist:
                 return super().to_internal_value(data)
 
             duration = self.parent.initial_data.get('duration')

@@ -955,6 +955,63 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             set(resp.data),
             {'day'})
 
+    def test_schedule_invalid(self):
+        """Test scheduling for the next free capacity."""
+        task2 = Task.objects.create(
+            user=self.user,
+            name='Other Testtask',
+            duration=Decimal(30))
+        TaskExecution.objects.create(
+            task=task2,
+            day=self.day,  # Saturday
+            duration=Decimal(5))
+        TaskExecution.objects.create(
+            task=task2,
+            day=self.day + timedelta(days=1),  # Sunday
+            duration=Decimal(5))
+        TaskExecution.objects.create(
+            task=task2,
+            day=self.day + timedelta(days=2),  # Monday
+            duration=Decimal(7))
+
+        self.task.duration = 10
+        self.task.save()
+
+        resp = self.client.post('/task/taskexecution/', {
+            'day': 'next_free_capacity',
+            'duration': 9,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'task_id', 'day'})
+
+        resp = self.client.post('/task/taskexecution/', {
+            'task_id': -100,
+            'day': 'next_free_capacity',
+            'duration': 9,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'task_id', 'day'})
+
+        resp = self.client.post('/task/taskexecution/', {
+            'task_id': self.task.pk,
+            'day': 'next_free_capacity',
+            'duration': 'not a decimal',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'day', 'duration'})
+
     def test_task_execution_min_filter(self):
         TaskExecution.objects.create(
             task=self.task,
