@@ -100,29 +100,10 @@ class Task(models.Model):
         elif special_date == 'tomorrow':
             return date.today() + timedelta(days=1)
         elif special_date == 'next_free_capacity':
-            if (duration > self.user.workhours_weekday and
-                    duration > self.user.workhours_weekend):
-                # does not fit in a single day
-                return None
-            today = date.today()
-            # TODO: aggregate this in the database!
-            for offset in range(90):
-                cur_day = today + timedelta(days=offset)
-                if Task.free_capacity(self.user, cur_day) >= duration:
-                    return cur_day
-            return None
+            return TaskExecution.next_day_with_capacity(
+                self.user, duration)
 
         raise ValueError('unknown special_date value: %s' % special_date)
-
-    @staticmethod
-    def free_capacity(user: get_user_model(), day: date) -> Decimal:
-        """Get the free capacity of a day."""
-        used_capacity = TaskExecution.objects.filter(
-            task__user=user, day=day).aggregate(
-            used_capacity=Sum('duration')
-        )['used_capacity'] or 0
-        total_capacity = user.capacity_of_day(day)
-        return total_capacity - used_capacity
 
 
 class TaskExecution(models.Model):
@@ -181,3 +162,43 @@ class TaskExecution(models.Model):
             day__lt=date.today(),
             finished=False
         ).order_by('day').select_related('task')
+
+    @staticmethod
+    def next_day_with_capacity(user: get_user_model(), min_remaining_capacity: Decimal,
+                               max_days: int = 60) -> Union[date, None]:
+        """
+        Get the next day on which user has at least min_capacity of
+        unscheduled duration left.
+        """
+        if min_remaining_capacity > user.workhours_weekday and min_remaining_capacity > user.workhours_weekend:
+            # can not fit into a single day
+            return None
+
+        today = date.today()
+        max_date = today + timedelta(days=max_days)
+
+        # aggregate scheduled duration for the next days
+        days = TaskExecution.objects.filter(
+            task__user=user,
+            day__gte=today,
+            day__lt=max_date,
+        ).values('day').annotate(
+            scheduled_duration=Sum('duration'))
+        days = {
+            row['day']: row['scheduled_duration']
+            for row in days
+        }
+
+        # search for the earliest day with enough remaining capacity
+        day = today
+        while day < max_date:
+            total_capacity = user.capacity_of_day(day)
+            scheduled_duration = days.get(day, 0)
+            remaining_capacity = total_capacity - scheduled_duration
+
+            if remaining_capacity > min_remaining_capacity:
+                return day
+
+            day += timedelta(days=1)
+
+        return None

@@ -955,6 +955,24 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             set(resp.data),
             {'day'})
 
+    @freeze_time('2001-02-03')
+    def test_schedule_next_free_capacity_too_long(self):
+        """Test scheduling for the next free capacity."""
+        self.task.duration = 25
+        self.task.save()
+
+        resp = self.client.post('/task/taskexecution/', {
+            'task_id': self.task.id,
+            'day': 'next_free_capacity',
+            'duration': 25,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'day'})
+
     def test_schedule_invalid(self):
         """Test scheduling for the next free capacity."""
         task2 = Task.objects.create(
@@ -1553,29 +1571,6 @@ class TaskTest(TestCase):
         exec.duration = Decimal(42) - Decimal(0)
         exec.save()
         self.assertEqual(task.default_schedule_duration, Decimal(0))
-
-    def test_free_capacity(self):
-        self.assertEqual(
-            Task.free_capacity(self.user1, self.weekdaydate1),
-            Decimal(10))
-        task1 = Task.objects.create(user=self.user1, duration=2)
-        self.assertEqual(
-            Task.free_capacity(self.user1, self.weekdaydate1),
-            Decimal(10))
-        exec1 = TaskExecution.objects.create(
-            task=task1,
-            day=self.weekdaydate1,
-            day_order=0,
-            duration=1,
-            finished=False)
-        self.assertEqual(
-            Task.free_capacity(self.user1, self.weekdaydate1),
-            Decimal(9))
-        exec1.finished = True
-        exec1.save()
-        self.assertEqual(
-            Task.free_capacity(self.user1, self.weekdaydate1),
-            Decimal(9))
 
     def test_duration_types(self):
         task1 = Task.objects.create(user=self.user1, duration=42)
