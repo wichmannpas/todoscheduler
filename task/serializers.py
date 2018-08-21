@@ -57,14 +57,15 @@ class DayOrScheduleField(serializers.DateField):
 
     def to_internal_value(self, data):
         if data in Task.VALID_SCHEDULE_SPECIAL_DATES:
-            # TODO: this low-level access to the request data is not nice.
-            task_id = self.context['request'].data.get('task_id')
+            task_id = self.parent.initial_data.get('task_id')
             if not task_id:
                 return super().to_internal_value(data)
-            task = self.context['request'].user.tasks.filter(pk=task_id).first()
-            if not task:
+            try:
+                task = self.context['request'].user.tasks.get(pk=task_id)
+            except Task.ObjectDoesNotExist:
                 return super().to_internal_value(data)
-            duration = self.context['request'].data.get('duration')
+
+            duration = self.parent.initial_data.get('duration')
             if not duration:
                 return super().to_internal_value(data)
             try:
