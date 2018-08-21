@@ -26,3 +26,6 @@ class User(AbstractUser):
             return self.workhours_weekday
 
         return self.workhours_weekend
+
+    def __str__(self) -> str:
+        return self.username
