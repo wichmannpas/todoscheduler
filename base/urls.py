@@ -1,12 +1,10 @@
-from rest_framework.routers import SimpleRouter
+from django.urls import path
 
 from . import views
 
 
 app_name = 'base'
 
-router = SimpleRouter()
-router.register(
-    'user',
-    views.UserViewSet)
-urlpatterns = router.urls
+urlpatterns = [
+    path('user/', views.UserView.as_view()),
+]
