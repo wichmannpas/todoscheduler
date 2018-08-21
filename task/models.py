@@ -130,6 +130,7 @@ class TaskChunk(models.Model):
     def __str__(self) -> str:
         return '{}: {}'.format(self.task, self.day)
 
+    @transaction.atomic
     def delete(self, postpone: bool = True):
         """
         Delete this task chunk.
@@ -137,15 +138,18 @@ class TaskChunk(models.Model):
         When not postponed, the duration of the task is reduced by the
         duration of this task chunk.
         """
-        with transaction.atomic():
-            if not postpone:
-                task = self.task
-                task.duration -= self.duration
-                if task.duration <= 0:
-                    task.delete()
-                else:
-                    task.save(update_fields=('duration',))
-            super().delete()
+        if not postpone:
+            # reduce the tasks duration
+
+            # make sure this task is locked (on supported db backends)
+            task = Task.objects.select_for_update().filter(pk=self.task_id).first()
+
+            task.duration -= self.duration
+            if task.duration <= 0:
+                task.delete()
+            else:
+                task.save(update_fields=('duration',))
+        super().delete()
 
     @staticmethod
     def get_next_day_order(user, day):
