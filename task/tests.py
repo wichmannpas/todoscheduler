@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
@@ -8,243 +9,7 @@ from freezegun import freeze_time
 from rest_framework import status
 
 from base.tests import AuthenticatedApiTest
-from .day import Day
 from .models import Task, TaskExecution
-
-
-class DayTest(TestCase):
-    def setUp(self):
-        self.user1 = get_user_model().objects.create(
-            username='johndoe',
-            email='a',
-            workhours_weekday=Decimal(10),
-            workhours_weekend=Decimal(5))
-        self.user2 = get_user_model().objects.create(
-            username='foobar',
-            email='b')
-
-        self.weekenddate1 = date(2017, 11, 5)
-        self.weekdaydate1 = date(2017, 11, 6)
-        self.weekdaydate2 = date(2017, 11, 7)
-        self.weekdaydate3 = date(2017, 11, 8)
-
-        self.todaydate = date.today()
-
-        self.futuredate1 = self.todaydate + timedelta(days=5)
-
-    def test_eq_for_different_days(self):
-        self.assertEqual(
-            Day(self.user1, self.weekenddate1),
-            Day(self.user1, self.weekenddate1))
-        self.assertNotEqual(
-            Day(self.user1, self.weekenddate1),
-            Day(self.user1, self.weekdaydate1))
-
-    def test_eq_for_different_users(self):
-        self.assertNotEqual(
-            Day(self.user1, self.weekenddate1),
-            Day(self.user2, self.weekenddate1))
-
-    def test_eq_for_different_days_and_users(self):
-        self.assertNotEqual(
-            Day(self.user1, self.weekdaydate1),
-            Day(self.user2, self.weekenddate1))
-
-    def test_hash_for_different_days(self):
-        self.assertEqual(
-            hash(Day(self.user1, self.weekenddate1)),
-            hash(Day(self.user1, self.weekenddate1)))
-        self.assertNotEqual(
-            hash(Day(self.user1, self.weekenddate1)),
-            hash(Day(self.user1, self.weekdaydate1)))
-
-    def test_hash_for_different_users(self):
-        self.assertNotEqual(
-            hash(Day(self.user1, self.weekenddate1)),
-            hash(Day(self.user2, self.weekenddate1)))
-
-    def test_hash_for_different_days_and_users(self):
-        self.assertNotEqual(
-            hash(Day(self.user1, self.weekdaydate1)),
-            hash(Day(self.user2, self.weekenddate1)))
-
-    def test_is_weekday(self):
-        self.assertTrue(
-            Day(self.user1, self.weekdaydate1).is_weekday())
-        self.assertFalse(
-            Day(self.user1, self.weekenddate1).is_weekday())
-
-    def test_in_past(self):
-        self.assertTrue(
-            Day(self.user1, self.weekdaydate1).in_past())
-        self.assertFalse(
-            Day(self.user1, self.todaydate).in_past())
-        self.assertFalse(
-            Day(self.user1, self.futuredate1).in_past())
-
-    def test_is_today(self):
-        self.assertTrue(
-            Day(self.user1, self.todaydate).is_today())
-        self.assertFalse(
-            Day(self.user1, self.weekdaydate1).is_today())
-        self.assertFalse(
-            Day(self.user1, self.futuredate1).is_today())
-
-    def test_scheduled_duration(self):
-        day = Day(self.user1, self.weekdaydate1)
-        self.assertEqual(
-            day.scheduled_duration,
-            0)
-        day.executions.append(
-            TaskExecution(duration=3))
-        self.assertEqual(
-            day.scheduled_duration,
-            3)
-        day.executions.append(
-            TaskExecution(duration=2))
-        self.assertEqual(
-            day.scheduled_duration,
-            5)
-
-    def test_available_duration_weekday(self):
-        day = Day(self.user1, self.weekdaydate1)
-        self.assertEqual(
-            day.available_duration,
-            10)
-        day.executions.append(
-            TaskExecution(duration=3))
-        self.assertEqual(
-            day.available_duration,
-            7)
-        day.executions.append(
-            TaskExecution(duration=10))
-        self.assertEqual(
-            day.available_duration,
-            -3)
-        day.executions.append(
-            TaskExecution(duration=10))
-        self.assertEqual(
-            day.available_duration,
-            -13)
-
-    def test_available_duration_weekend(self):
-        day = Day(self.user1, self.weekenddate1)
-        self.assertEqual(
-            day.available_duration,
-            5)
-        day.executions.append(
-            TaskExecution(duration=3))
-        self.assertEqual(
-            day.available_duration,
-            2)
-        day.executions.append(
-            TaskExecution(duration=10))
-        self.assertEqual(
-            day.available_duration,
-            -8)
-        day.executions.append(
-            TaskExecution(duration=10))
-        self.assertEqual(
-            day.available_duration,
-            -18)
-
-    def test_max_duration_weekday(self):
-        day = Day(self.user1, self.weekdaydate1)
-        self.assertEqual(
-            day.max_duration,
-            10)
-
-    def test_max_duration_weekend(self):
-        day = Day(self.user1, self.weekenddate1)
-        self.assertEqual(
-            day.max_duration,
-            5)
-
-    def test_duration_types(self):
-        day = Day(self.user1, self.weekenddate1)
-        self.assertIsInstance(
-            day.scheduled_duration,
-            Decimal)
-        self.assertIsInstance(
-            day.available_duration,
-            Decimal)
-        self.assertIsInstance(
-            day.max_duration,
-            Decimal)
-        day.executions.append(
-            TaskExecution(duration=10))
-        self.assertIsInstance(
-            day.scheduled_duration,
-            Decimal)
-        self.assertIsInstance(
-            day.available_duration,
-            Decimal)
-        self.assertIsInstance(
-            day.max_duration,
-            Decimal)
-        day.executions.append(
-            TaskExecution(duration=7))
-        self.assertIsInstance(
-            day.scheduled_duration,
-            Decimal)
-        self.assertIsInstance(
-            day.available_duration,
-            Decimal)
-        self.assertIsInstance(
-            day.max_duration,
-            Decimal)
-
-    def test_finished_duration(self):
-        day = Day(self.user1, self.weekenddate1)
-        self.assertEqual(
-            day.finished_duration,
-            0)
-        execution1 = TaskExecution(duration=2)
-        day.executions.append(execution1)
-        self.assertEqual(
-            day.finished_duration,
-            0)
-        execution1.finished = True
-        self.assertEqual(
-            day.finished_duration,
-            2)
-        execution2 = TaskExecution(duration=4)
-        day.executions.append(execution2)
-        self.assertEqual(
-            day.finished_duration,
-            2)
-        execution2.finished = True
-        self.assertEqual(
-            day.finished_duration,
-            6)
-
-    def test_remaining_duration(self):
-        day = Day(self.user1, self.weekenddate1)
-        self.assertEqual(
-            day.remaining_duration,
-            0)
-        execution1 = TaskExecution(duration=2)
-        day.executions.append(execution1)
-        self.assertEqual(
-            day.remaining_duration,
-            2)
-        execution2 = TaskExecution(duration=1)
-        day.executions.append(execution2)
-        self.assertEqual(
-            day.remaining_duration,
-            3)
-        execution1.finished = True
-        self.assertEqual(
-            day.remaining_duration,
-            1)
-        execution2.finished = True
-        self.assertEqual(
-            day.remaining_duration,
-            0)
-        execution1.finished = False
-        self.assertEqual(
-            day.remaining_duration,
-            2)
 
 
 class TaskViewTest(AuthenticatedApiTest):
@@ -1150,6 +915,298 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             self.task.duration,
             Decimal(10))
+
+    def test_task_execution_min_filter(self):
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=4,
+            day=date(2018, 1, 15))
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=8,
+            day=date(2018, 1, 12))
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=2,
+            day=date(2018, 1, 17))
+
+        resp = self.client.get('/task/taskexecution/')
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            3)
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'min_date': '2018-01-14',
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            2)
+        self.assertSetEqual(
+            {ex['day'] for ex in resp.data},
+            {
+                '2018-01-15',
+                '2018-01-17',
+            })
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'min_date': '2018-02-14',
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            0)
+
+    def test_task_execution_max_filter(self):
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=4,
+            day=date(2018, 1, 15))
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=8,
+            day=date(2018, 1, 12))
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=2,
+            day=date(2018, 1, 17))
+
+        resp = self.client.get('/task/taskexecution/')
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            3)
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'max_date': '2018-01-14',
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            1)
+        self.assertSetEqual(
+            {ex['day'] for ex in resp.data},
+            {
+                '2018-01-12',
+            })
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'max_date': '2016-02-14',
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            0)
+
+    def test_task_execution_min_max_filter(self):
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=4,
+            day=date(2018, 1, 15))
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=8,
+            day=date(2018, 1, 12))
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=2,
+            day=date(2018, 1, 17))
+
+        resp = self.client.get('/task/taskexecution/')
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            3)
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'min_date': '2018-01-14',
+            'max_date': '2018-01-17',
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            2)
+        self.assertSetEqual(
+            {ex['day'] for ex in resp.data},
+            {
+                '2018-01-15',
+                '2018-01-17',
+            })
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'min_date': '2018-01-13',
+            'max_date': '2018-01-14',
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            0)
+
+    def test_task_execution_task_filter(self):
+        task2 = Task.objects.create(
+            user=self.user,
+            name='Another Testtask',
+            duration=Decimal(4))
+        task3 = Task.objects.create(
+            user=self.user,
+            name='Yet Another Testtask',
+            duration=Decimal(5))
+
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=4,
+            day=date(2018, 1, 15))
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=8,
+            day=date(2018, 1, 12))
+        TaskExecution.objects.create(
+            task=self.task,
+            duration=2,
+            day=date(2018, 1, 17))
+
+        TaskExecution.objects.create(
+            task=task2,
+            duration=2,
+            day=date(2018, 2, 17))
+        TaskExecution.objects.create(
+            task=task2,
+            duration=2,
+            day=date(2018, 1, 17))
+
+        TaskExecution.objects.create(
+            task=task3,
+            duration=2,
+            day=date(2019, 12, 24))
+
+        resp = self.client.get('/task/taskexecution/')
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            6)
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'task_ids': [task2.pk],
+        }, True))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            2)
+        self.assertSetEqual(
+            {ex['task']['id'] for ex in resp.data},
+            {
+                task2.pk,
+            })
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'task_ids': [task3.pk, task2.pk],
+        }, True))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            3)
+        self.assertSetEqual(
+            {ex['task']['id'] for ex in resp.data},
+            {
+                task2.pk,
+                task3.pk,
+            })
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'task_ids': [-100],
+        }, True))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            0)
+
+    def test_task_execution_invalid_filter(self):
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'task_ids': [
+                'not an integer!',
+            ],
+        }, True))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'task_ids',
+            })
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'task_ids': [
+                'not an integer!',
+            ],
+            'min_date': 'not a date...',
+            'max_date': 'not a date...',
+        }, True))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'task_ids',
+                'min_date',
+                'max_date',
+            })
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'min_date': '2018-05-12',
+            'max_date': 'not a date...',
+        }, True))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'max_date',
+            })
+
+        resp = self.client.get('/task/taskexecution/?' + urlencode({
+            'min_date': '2018-05-12',
+            'max_date': '2018-05-11',  # before min_date
+        }, True))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST,
+            'the max date should not be allowed to be before the min date')
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'max_date',
+            },
+            'the max date should not be allowed to be before the min date')
 
 
 class TaskTest(TestCase):
