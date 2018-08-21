@@ -11,6 +11,25 @@ from django.db.models import Sum, F, Max, QuerySet
 from django.db.models.functions import Coalesce
 
 
+class TaskQuerySet(models.QuerySet):
+    def filter_incomplete(self):
+        return self.annotate(
+            scheduled_duration_agg=Coalesce(
+                Sum('executions__duration'),
+                0)).annotate(
+            incomplete_duration_agg=F(
+                'duration') - F('scheduled_duration_agg')
+        ).filter(incomplete_duration_agg__gt=0)
+
+
+class TaskManager(models.Manager):
+    def get_queryset(self):
+        return TaskQuerySet(self.model, using=self._db)
+
+    def filter_incomplete(self):
+        return self.get_queryset().filter_incomplete()
+
+
 class Task(models.Model):
     """A task is a single job to do."""
 
@@ -30,6 +49,8 @@ class Task(models.Model):
         ))
 
     start = models.DateField(null=True)
+
+    objects = TaskManager()
 
     def __str__(self) -> str:
         return '{}: {}'.format(self.user, self.name)
@@ -89,19 +110,9 @@ class Task(models.Model):
                 cur_day = today + timedelta(days=offset)
                 if Task.free_capacity(self.user, cur_day) >= duration:
                     return cur_day
+            # TODO: handle no available free day in range
 
         raise ValueError('unknown special_date value: %s' % special_date)
-
-    @staticmethod
-    def incomplete_tasks(user: get_user_model()):
-        """Get all tasks which are not yet fully scheduled."""
-        return user.tasks.annotate(
-            scheduled_duration_agg=Coalesce(
-                Sum('executions__duration'),
-                0)).annotate(
-            incomplete_duration_agg=F(
-                'duration') - F('scheduled_duration_agg')
-        ).filter(incomplete_duration_agg__gt=0)
 
     @staticmethod
     def free_capacity(user: get_user_model(), day: date) -> Decimal:
