@@ -15,7 +15,7 @@ class TaskQuerySet(models.QuerySet):
     def filter_incomplete(self):
         return self.annotate(
             scheduled_duration_agg=Coalesce(
-                Sum('executions__duration'),
+                Sum('chunks__duration'),
                 0)).annotate(
             incomplete_duration_agg=F(
                 'duration') - F('scheduled_duration_agg')
@@ -59,14 +59,14 @@ class Task(models.Model):
     def finished_duration(self) -> Decimal:
         if hasattr(self, 'finished_duration_agg'):
             return self.finished_duration_agg
-        return self.executions.filter(finished=True).aggregate(
+        return self.chunks.filter(finished=True).aggregate(
             Sum('duration'))['duration__sum'] or Decimal(0)
 
     @property
     def scheduled_duration(self) -> Decimal:
         if hasattr(self, 'scheduled_duration_agg'):
             return self.scheduled_duration_agg
-        return self.executions.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)
+        return self.chunks.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)
 
     @property
     def incomplete_duration(self) -> Decimal:
@@ -75,7 +75,7 @@ class Task(models.Model):
             return self.incomplete_duration_agg
         return (
             self.duration -
-            (self.executions.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)))
+            (self.chunks.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)))
 
     @property
     def default_schedule_duration(self) -> Decimal:
@@ -93,24 +93,27 @@ class Task(models.Model):
     def get_day_for_scheduling(
             self, special_date: str, duration: Decimal) -> Union[None, date]:
         """
-        Get the day for a task execution by a special day string (i.e., 'today').
+        Determine a day on which another chunk of this task can be scheduled
+        by a special day string (i.e., 'today' or 'next_free_capacity').
         """
+        assert special_date in self.VALID_SCHEDULE_SPECIAL_DATES, 'unknown special_date value'
+
         if special_date == 'today':
             return date.today()
         elif special_date == 'tomorrow':
             return date.today() + timedelta(days=1)
         elif special_date == 'next_free_capacity':
-            return TaskExecution.next_day_with_capacity(
+            return TaskChunk.next_day_with_capacity(
                 self.user, duration)
 
-        raise ValueError('unknown special_date value: %s' % special_date)
 
-
-class TaskExecution(models.Model):
-    """An execution of a task."""
+class TaskChunk(models.Model):
+    """
+    A chunk of a task that is scheduled for a specific day.
+    """
 
     task = models.ForeignKey(
-        Task, on_delete=models.CASCADE, related_name='executions')
+        Task, on_delete=models.CASCADE, related_name='chunks')
     day = models.DateField()
     day_order = models.SmallIntegerField()
     duration = models.DecimalField(
@@ -124,7 +127,7 @@ class TaskExecution(models.Model):
         super().__init__(*args, **kwargs)
 
         if self.day_order is None and not self.pk and self.day and self.task:
-            self.day_order = TaskExecution.get_next_day_order(
+            self.day_order = TaskChunk.get_next_day_order(
                 self.task.user, self.day)
 
     def __str__(self) -> str:
@@ -132,10 +135,10 @@ class TaskExecution(models.Model):
 
     def delete(self, postpone: bool = True):
         """
-        Delete this task execution.
+        Delete this task chunk.
 
         When not postponed, the duration of the task is reduced by the
-        duration of this task execution.
+        duration of this task chunk.
         """
         with transaction.atomic():
             if not postpone:
@@ -150,14 +153,14 @@ class TaskExecution(models.Model):
     @staticmethod
     def get_next_day_order(user, day):
         """Get the next day order for a specific day."""
-        return (TaskExecution.objects.filter(
+        return (TaskChunk.objects.filter(
             task__user=user,
             day=day).aggregate(Max('day_order'))['day_order__max'] or 0) + 1
 
     @staticmethod
-    def missed_task_executions(user: get_user_model()) -> QuerySet:
-        """Get all unfinished task executions scheduled for a past day."""
-        return TaskExecution.objects.filter(
+    def missed_chunks(user: get_user_model()) -> QuerySet:
+        """Get all unfinished task chunks scheduled for a past day."""
+        return TaskChunk.objects.filter(
             task__user=user,
             day__lt=date.today(),
             finished=False
@@ -178,7 +181,7 @@ class TaskExecution(models.Model):
         max_date = today + timedelta(days=max_days)
 
         # aggregate scheduled duration for the next days
-        days = TaskExecution.objects.filter(
+        days = TaskChunk.objects.filter(
             task__user=user,
             day__gte=today,
             day__lt=max_date,

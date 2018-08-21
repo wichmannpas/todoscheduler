@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Task, TaskExecution
+from .models import Task, TaskChunk
 
 
 @admin.register(Task)
@@ -12,8 +12,8 @@ class TaskAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(TaskExecution)
-class TaskExecutionAdmin(admin.ModelAdmin):
+@admin.register(TaskChunk)
+class TaskChunkAdmin(admin.ModelAdmin):
     list_display = (
         'day',
         'duration',

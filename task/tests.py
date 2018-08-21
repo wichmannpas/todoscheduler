@@ -9,7 +9,7 @@ from freezegun import freeze_time
 from rest_framework import status
 
 from base.tests import AuthenticatedApiTest
-from .models import Task, TaskExecution
+from .models import Task, TaskChunk
 
 
 class TaskViewTest(AuthenticatedApiTest):
@@ -65,7 +65,7 @@ class TaskViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Testtask',
             duration=Decimal(2))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task,
             day=date(2000, 1, 2),
             day_order=0,
@@ -90,7 +90,7 @@ class TaskViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Testtask',
             duration=Decimal(2))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task,
             day=date(2000, 1, 2),
             day_order=0,
@@ -263,7 +263,7 @@ class TaskViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Testtask',
             duration=Decimal(2))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task,
             day=date(2010, 5, 14),
             duration=Decimal(2))
@@ -334,7 +334,7 @@ class TaskViewTest(AuthenticatedApiTest):
             'own task')
 
 
-class TaskExecutionViewTest(AuthenticatedApiTest):
+class TaskChunkViewTest(AuthenticatedApiTest):
     def setUp(self):
         super().setUp()
 
@@ -346,33 +346,33 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             name='Testtask',
             duration=Decimal(2))
 
-    def test_finish_task_execution(self):
-        """Test finishing a task execution."""
-        task_execution = TaskExecution.objects.create(
+    def test_finish_task_chunk(self):
+        """Test finishing a task chunk."""
+        task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             day_order=0,
             duration=Decimal(1))
 
         self.assertEqual(
-            task_execution.finished,
+            task_chunk.finished,
             False)
 
-        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk.pk), {
             'finished': True,
         })
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
 
-        task_execution.refresh_from_db()
+        task_chunk.refresh_from_db()
         self.assertEqual(
-            task_execution.finished,
+            task_chunk.finished,
             True)
 
-    def test_unfinish_task_execution(self):
-        """Test unfinishing a task execution."""
-        task_execution = TaskExecution.objects.create(
+    def test_unfinish_task_chunk(self):
+        """Test unfinishing a task chunk."""
+        task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             day_order=0,
@@ -380,83 +380,83 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             finished=True)
 
         self.assertEqual(
-            task_execution.finished,
+            task_chunk.finished,
             True)
 
-        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk.pk), {
             'finished': False,
         })
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
 
-        task_execution.refresh_from_db()
+        task_chunk.refresh_from_db()
         self.assertEqual(
-            task_execution.finished,
+            task_chunk.finished,
             False)
 
-    def test_delete_task_execution(self):
-        """Test the deletion of a task execution without postponing."""
-        task_execution = TaskExecution.objects.create(
+    def test_delete_task_chunk(self):
+        """Test the deletion of a task chunk without postponing."""
+        task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             day_order=0,
             duration=Decimal(1))
 
-        resp = self.client.delete('/task/taskexecution/{}/?postpone=0'.format(task_execution.pk))
+        resp = self.client.delete('/task/chunk/{}/?postpone=0'.format(task_chunk.pk))
         self.assertEqual(
             resp.status_code,
             status.HTTP_204_NO_CONTENT)
 
         self.assertRaises(
             ObjectDoesNotExist,
-            task_execution.refresh_from_db)
+            task_chunk.refresh_from_db)
         self.task.refresh_from_db()
         self.assertEqual(
             self.task.duration,
             Decimal(1))
 
-    def test_delete_task_execution_with_task(self):
+    def test_delete_task_chunk_with_task(self):
         """
-        Test the deletion of a task execution without postponing.
+        Test the deletion of a task chunk without postponing.
 
-        The task should be deleted as well because the task execution
+        The task should be deleted as well because the task chunk
         duration matches the task duration.
         """
-        task_execution = TaskExecution.objects.create(
+        task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             day_order=0,
             duration=Decimal(2))
 
-        resp = self.client.delete('/task/taskexecution/{}/?postpone=0'.format(task_execution.pk))
+        resp = self.client.delete('/task/chunk/{}/?postpone=0'.format(task_chunk.pk))
         self.assertEqual(
             resp.status_code,
             status.HTTP_204_NO_CONTENT)
 
         self.assertRaises(
             ObjectDoesNotExist,
-            task_execution.refresh_from_db)
+            task_chunk.refresh_from_db)
         self.assertRaises(
             ObjectDoesNotExist,
             self.task.refresh_from_db)
 
-    def test_postpone_task_execution(self):
-        """Test the deletion of a task execution with postponing."""
-        task_execution = TaskExecution.objects.create(
+    def test_postpone_task_chunk(self):
+        """Test the deletion of a task chunk with postponing."""
+        task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             day_order=0,
             duration=Decimal(1))
 
-        resp = self.client.delete('/task/taskexecution/{}/?postpone=1'.format(task_execution.pk))
+        resp = self.client.delete('/task/chunk/{}/?postpone=1'.format(task_chunk.pk))
         self.assertEqual(
             resp.status_code,
             status.HTTP_204_NO_CONTENT)
 
         self.assertRaises(
             ObjectDoesNotExist,
-            task_execution.refresh_from_db)
+            task_chunk.refresh_from_db)
         self.task.refresh_from_db()
         self.assertEqual(
             self.task.duration,
@@ -464,10 +464,10 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
 
     def test_change_duration(self):
         """
-        Test changing the duration of the task execution.
+        Test changing the duration of the task chunk.
         This should change the task duration as well.
         """
-        task_execution = TaskExecution.objects.create(
+        task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             day_order=0,
@@ -475,35 +475,35 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             finished=True)
 
         self.assertEqual(
-            task_execution.finished,
+            task_chunk.finished,
             True)
 
-        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk.pk), {
             'duration': 4,
         })
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
 
-        task_execution.refresh_from_db()
+        task_chunk.refresh_from_db()
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal(4))
         self.task.refresh_from_db()
         self.assertEqual(
             self.task.duration,
             Decimal(5))  # 2 + (4 - 1)
 
-        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk.pk), {
             'duration': '0.5',
         })
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
 
-        task_execution.refresh_from_db()
+        task_chunk.refresh_from_db()
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal('0.5'))
         self.task.refresh_from_db()
         self.assertEqual(
@@ -512,9 +512,9 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
 
     def test_change_duration_invalid(self):
         """
-        Test changing the duration of the task execution to an invalid value.
+        Test changing the duration of the task chunk to an invalid value.
         """
-        task_execution = TaskExecution.objects.create(
+        task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             day_order=0,
@@ -522,52 +522,52 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             finished=True)
 
         self.assertEqual(
-            task_execution.finished,
+            task_chunk.finished,
             True)
 
-        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution.pk), {
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk.pk), {
             'duration': -4,
         })
         self.assertEqual(
             resp.status_code,
             status.HTTP_400_BAD_REQUEST)
 
-        task_execution.refresh_from_db()
+        task_chunk.refresh_from_db()
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal(1))
 
-    def test_exchange_task_execution(self):
-        """Test exchanging a task execution with another."""
-        task_execution1 = TaskExecution.objects.create(
+    def test_exchange_task_chunk(self):
+        """Test exchanging a task chunk with another."""
+        task_chunk1 = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             duration=Decimal(1),
             day_order=1
         )
-        task_execution2 = TaskExecution.objects.create(
+        task_chunk2 = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             duration=Decimal(1),
             day_order=2
         )
 
-        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk1.pk), {
             'day_order': 2,
         })
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
-        task_execution1.refresh_from_db()
+        task_chunk1.refresh_from_db()
         self.assertEqual(
-            task_execution1.day_order,
+            task_chunk1.day_order,
             2)
-        task_execution2.refresh_from_db()
+        task_chunk2.refresh_from_db()
         self.assertEqual(
-            task_execution2.day_order,
+            task_chunk2.day_order,
             1)
 
-        resp = self.client.put('/task/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.put('/task/chunk/{}/'.format(task_chunk1.pk), {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': 1,
@@ -576,54 +576,54 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
-        task_execution1.refresh_from_db()
+        task_chunk1.refresh_from_db()
         self.assertEqual(
-            task_execution1.day_order,
+            task_chunk1.day_order,
             1)
-        task_execution2.refresh_from_db()
+        task_chunk2.refresh_from_db()
         self.assertEqual(
-            task_execution2.day_order,
+            task_chunk2.day_order,
             2)
 
-    def test_task_execution_change_day(self):
+    def test_task_chunk_change_day(self):
         """
-        Test changing the day of a task execution. The submitted
-        day order should be ignored and the execution placed at the
+        Test changing the day of a task chunk. The submitted
+        day order should be ignored and the chunk placed at the
         end of the new day.
         """
-        task_execution1 = TaskExecution.objects.create(
+        task_chunk1 = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             duration=Decimal(1),
             day_order=1
         )
-        task_execution2 = TaskExecution.objects.create(
+        task_chunk2 = TaskChunk.objects.create(
             task=self.task,
             day=self.day2,
             duration=Decimal(1),
             day_order=1
         )
 
-        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk1.pk), {
             'day': '2001-02-04',
         })
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
-        task_execution1.refresh_from_db()
+        task_chunk1.refresh_from_db()
         self.assertEqual(
-            task_execution1.day_order,
+            task_chunk1.day_order,
             2)
         self.assertEqual(
-            task_execution1.day,
+            task_chunk1.day,
             self.day2)
-        task_execution2.refresh_from_db()
+        task_chunk2.refresh_from_db()
         self.assertEqual(
-            task_execution2.day_order,
+            task_chunk2.day_order,
             1)
 
         # provided day order should be ignored
-        resp = self.client.put('/task/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.put('/task/chunk/{}/'.format(task_chunk1.pk), {
             'task_id': self.task.id,
             'day': '2001-02-01',
             'duration': 1,
@@ -632,37 +632,37 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
-        task_execution1.refresh_from_db()
+        task_chunk1.refresh_from_db()
         self.assertEqual(
-            task_execution1.day_order,
+            task_chunk1.day_order,
             1)
         self.assertEqual(
-            task_execution1.day,
+            task_chunk1.day,
             date(2001, 2, 1))
-        task_execution2.refresh_from_db()
+        task_chunk2.refresh_from_db()
         self.assertEqual(
-            task_execution2.day_order,
+            task_chunk2.day_order,
             1)
 
-        resp = self.client.patch('/task/taskexecution/{}/'.format(task_execution1.pk), {
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk1.pk), {
             'day': '2001-02-01',
         })
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
-        task_execution1.refresh_from_db()
+        task_chunk1.refresh_from_db()
         self.assertEqual(
-            task_execution1.day_order,
+            task_chunk1.day_order,
             1)
         self.assertEqual(
-            task_execution1.day,
+            task_chunk1.day,
             date(2001, 2, 1))
 
     def test_explicit_creation(self):
         """
-        Test the explicit creation of a new task execution.
+        Test the explicit creation of a new task chunk.
         """
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'day_order': 0,
@@ -671,19 +671,19 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution = TaskExecution.objects.get(
+        task_chunk = TaskChunk.objects.get(
             pk=resp.data['id'])
         self.assertEqual(
-            task_execution.task,
+            task_chunk.task,
             self.task)
         self.assertEqual(
-            task_execution.day,
+            task_chunk.day,
             self.day)
         self.assertEqual(
-            task_execution.day_order,
+            task_chunk.day_order,
             0)
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal(2))
 
         self.task.refresh_from_db()
@@ -693,10 +693,10 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
 
     def test_explicit_creation_task_duration_increase(self):
         """
-        Test the explicit creation of a new task execution with a duration longer
+        Test the explicit creation of a new task chunk with a duration longer
         than the task duration. The task duration should be increased.
         """
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'day_order': 0,
@@ -705,19 +705,19 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution = TaskExecution.objects.get(
+        task_chunk = TaskChunk.objects.get(
             pk=resp.data['id'])
         self.assertEqual(
-            task_execution.task,
+            task_chunk.task,
             self.task)
         self.assertEqual(
-            task_execution.day,
+            task_chunk.day,
             self.day)
         self.assertEqual(
-            task_execution.day_order,
+            task_chunk.day_order,
             0)
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal(5))
 
         self.task.refresh_from_db()
@@ -728,9 +728,9 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
     def test_explicit_creation_day_order(self):
         """
         Test that the day order is set correctly when explicitly
-        creating multiple task executions without specifying a day order.
+        creating multiple task chunks without specifying a day order.
         """
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': '0.5',
@@ -738,10 +738,10 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution1 = TaskExecution.objects.get(
+        task_chunk1 = TaskChunk.objects.get(
             pk=resp.data['id'])
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-04',
             'duration': '0.5',
@@ -749,10 +749,10 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution2 = TaskExecution.objects.get(
+        task_chunk2 = TaskChunk.objects.get(
             pk=resp.data['id'])
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': '0.1',
@@ -760,10 +760,10 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution3 = TaskExecution.objects.get(
+        task_chunk3 = TaskChunk.objects.get(
             pk=resp.data['id'])
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': '0.1',
@@ -771,33 +771,33 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution4 = TaskExecution.objects.get(
+        task_chunk4 = TaskChunk.objects.get(
             pk=resp.data['id'])
 
         self.assertGreater(
-            task_execution4.day_order,
-            task_execution3.day_order,
-            task_execution1.day_order)
+            task_chunk4.day_order,
+            task_chunk3.day_order,
+            task_chunk1.day_order)
 
-        # both task executions were the first of their day
+        # both task chunks were the first of their day
         self.assertEqual(
-            task_execution1.day_order,
-            task_execution2.day_order)
+            task_chunk1.day_order,
+            task_chunk2.day_order)
 
     def test_explicit_creation_too_high_duration(self):
         """
-        Explicitly create a new task execution.
+        Explicitly create a new task chunk.
         Try to set the duration higher than the incomplete duration of
         the task.
         The task duration should be increased in that case.
         """
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             day=self.day,
             duration=Decimal(1),
             finished=True)
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
             'duration': 5,
@@ -805,16 +805,16 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution = TaskExecution.objects.get(
+        task_chunk = TaskChunk.objects.get(
             pk=resp.data['id'])
         self.assertEqual(
-            task_execution.task,
+            task_chunk.task,
             self.task)
         self.assertEqual(
-            task_execution.day,
+            task_chunk.day,
             self.day)
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal(5))
 
         self.task.refresh_from_db()
@@ -825,7 +825,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
     @freeze_time('2001-02-03')
     def test_schedule_for_today(self):
         """Test scheduling for current day."""
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': 'today',
             'duration': 2,
@@ -833,16 +833,16 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution = TaskExecution.objects.get(
+        task_chunk = TaskChunk.objects.get(
             pk=resp.data['id'])
         self.assertEqual(
-            task_execution.task,
+            task_chunk.task,
             self.task)
         self.assertEqual(
-            task_execution.day,
+            task_chunk.day,
             self.day)
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal(2))
 
         self.task.refresh_from_db()
@@ -853,7 +853,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
     @freeze_time('2001-02-03')
     def test_schedule_for_tomorrow(self):
         """Test scheduling for the next day."""
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': 'tomorrow',
             'duration': 2,
@@ -861,16 +861,16 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution = TaskExecution.objects.get(
+        task_chunk = TaskChunk.objects.get(
             pk=resp.data['id'])
         self.assertEqual(
-            task_execution.task,
+            task_chunk.task,
             self.task)
         self.assertEqual(
-            task_execution.day,
+            task_chunk.day,
             self.day + timedelta(days=1))
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal(2))
 
         self.task.refresh_from_db()
@@ -885,15 +885,15 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Other Testtask',
             duration=Decimal(30))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task2,
             day=self.day,  # Saturday
             duration=Decimal(5))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task2,
             day=self.day + timedelta(days=1),  # Sunday
             duration=Decimal(5))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task2,
             day=self.day + timedelta(days=2),  # Monday
             duration=Decimal(7))
@@ -901,7 +901,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.task.duration = 10
         self.task.save()
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': 'next_free_capacity',
             'duration': 9,
@@ -909,16 +909,16 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_201_CREATED)
-        task_execution = TaskExecution.objects.get(
+        task_chunk = TaskChunk.objects.get(
             pk=resp.data['id'])
         self.assertEqual(
-            task_execution.task,
+            task_chunk.task,
             self.task)
         self.assertEqual(
-            task_execution.day,
+            task_chunk.day,
             self.day + timedelta(days=3))  # Tuesday
         self.assertEqual(
-            task_execution.duration,
+            task_chunk.duration,
             Decimal(9))
 
         self.task.refresh_from_db()
@@ -935,7 +935,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             duration=Decimal(30))
         for offset in range(100):
             day = self.day + timedelta(days=offset)
-            TaskExecution.objects.create(
+            TaskChunk.objects.create(
                 task=task2,
                 day=day,
                 duration=self.user.capacity_of_day(day))
@@ -943,7 +943,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.task.duration = 10
         self.task.save()
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': 'next_free_capacity',
             'duration': 5,
@@ -961,7 +961,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.task.duration = 25
         self.task.save()
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': 'next_free_capacity',
             'duration': 25,
@@ -979,15 +979,15 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             user=self.user,
             name='Other Testtask',
             duration=Decimal(30))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task2,
             day=self.day,  # Saturday
             duration=Decimal(5))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task2,
             day=self.day + timedelta(days=1),  # Sunday
             duration=Decimal(5))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task2,
             day=self.day + timedelta(days=2),  # Monday
             duration=Decimal(7))
@@ -995,7 +995,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
         self.task.duration = 10
         self.task.save()
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'day': 'next_free_capacity',
             'duration': 9,
         })
@@ -1006,7 +1006,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             set(resp.data),
             {'task_id', 'day'})
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': -100,
             'day': 'next_free_capacity',
             'duration': 9,
@@ -1018,7 +1018,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             set(resp.data),
             {'task_id', 'day'})
 
-        resp = self.client.post('/task/taskexecution/', {
+        resp = self.client.post('/task/chunk/', {
             'task_id': self.task.pk,
             'day': 'next_free_capacity',
             'duration': 'not a decimal',
@@ -1030,21 +1030,21 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             set(resp.data),
             {'day', 'duration'})
 
-    def test_task_execution_min_filter(self):
-        TaskExecution.objects.create(
+    def test_task_chunk_min_filter(self):
+        TaskChunk.objects.create(
             task=self.task,
             duration=4,
             day=date(2018, 1, 15))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=8,
             day=date(2018, 1, 12))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=2,
             day=date(2018, 1, 17))
 
-        resp = self.client.get('/task/taskexecution/')
+        resp = self.client.get('/task/chunk/')
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
@@ -1052,7 +1052,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             len(resp.data),
             3)
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'min_date': '2018-01-14',
         }))
         self.assertEqual(
@@ -1068,7 +1068,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
                 '2018-01-17',
             })
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'min_date': '2018-02-14',
         }))
         self.assertEqual(
@@ -1078,21 +1078,21 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             len(resp.data),
             0)
 
-    def test_task_execution_max_filter(self):
-        TaskExecution.objects.create(
+    def test_task_chunk_max_filter(self):
+        TaskChunk.objects.create(
             task=self.task,
             duration=4,
             day=date(2018, 1, 15))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=8,
             day=date(2018, 1, 12))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=2,
             day=date(2018, 1, 17))
 
-        resp = self.client.get('/task/taskexecution/')
+        resp = self.client.get('/task/chunk/')
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
@@ -1100,7 +1100,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             len(resp.data),
             3)
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'max_date': '2018-01-14',
         }))
         self.assertEqual(
@@ -1115,7 +1115,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
                 '2018-01-12',
             })
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'max_date': '2016-02-14',
         }))
         self.assertEqual(
@@ -1125,21 +1125,21 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             len(resp.data),
             0)
 
-    def test_task_execution_min_max_filter(self):
-        TaskExecution.objects.create(
+    def test_task_chunk_min_max_filter(self):
+        TaskChunk.objects.create(
             task=self.task,
             duration=4,
             day=date(2018, 1, 15))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=8,
             day=date(2018, 1, 12))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=2,
             day=date(2018, 1, 17))
 
-        resp = self.client.get('/task/taskexecution/')
+        resp = self.client.get('/task/chunk/')
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
@@ -1147,7 +1147,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             len(resp.data),
             3)
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'min_date': '2018-01-14',
             'max_date': '2018-01-17',
         }))
@@ -1164,7 +1164,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
                 '2018-01-17',
             })
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'min_date': '2018-01-13',
             'max_date': '2018-01-14',
         }))
@@ -1175,7 +1175,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             len(resp.data),
             0)
 
-    def test_task_execution_task_filter(self):
+    def test_task_chunk_task_filter(self):
         task2 = Task.objects.create(
             user=self.user,
             name='Another Testtask',
@@ -1185,34 +1185,34 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             name='Yet Another Testtask',
             duration=Decimal(5))
 
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=4,
             day=date(2018, 1, 15))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=8,
             day=date(2018, 1, 12))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=self.task,
             duration=2,
             day=date(2018, 1, 17))
 
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task2,
             duration=2,
             day=date(2018, 2, 17))
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task2,
             duration=2,
             day=date(2018, 1, 17))
 
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task3,
             duration=2,
             day=date(2019, 12, 24))
 
-        resp = self.client.get('/task/taskexecution/')
+        resp = self.client.get('/task/chunk/')
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
@@ -1220,7 +1220,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             len(resp.data),
             6)
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'task_ids': [task2.pk],
         }, True))
         self.assertEqual(
@@ -1235,7 +1235,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
                 task2.pk,
             })
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'task_ids': [task3.pk, task2.pk],
         }, True))
         self.assertEqual(
@@ -1251,7 +1251,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
                 task3.pk,
             })
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'task_ids': [-100],
         }, True))
         self.assertEqual(
@@ -1261,8 +1261,8 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
             len(resp.data),
             0)
 
-    def test_task_execution_invalid_filter(self):
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+    def test_task_chunk_invalid_filter(self):
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'task_ids': [
                 'not an integer!',
             ],
@@ -1276,7 +1276,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
                 'task_ids',
             })
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'task_ids': [
                 'not an integer!',
             ],
@@ -1294,7 +1294,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
                 'max_date',
             })
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'min_date': '2018-05-12',
             'max_date': 'not a date...',
         }, True))
@@ -1307,7 +1307,7 @@ class TaskExecutionViewTest(AuthenticatedApiTest):
                 'max_date',
             })
 
-        resp = self.client.get('/task/taskexecution/?' + urlencode({
+        resp = self.client.get('/task/chunk/?' + urlencode({
             'min_date': '2018-05-12',
             'max_date': '2018-05-11',  # before min_date
         }, True))
@@ -1345,7 +1345,7 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.finished_duration,
             0)
-        exec1 = TaskExecution.objects.create(
+        chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1354,12 +1354,12 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.finished_duration,
             0)
-        exec1.finished = True
-        exec1.save()
+        chunk1.finished = True
+        chunk1.save()
         self.assertEqual(
             task1.finished_duration,
             4)
-        exec2 = TaskExecution.objects.create(
+        chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1368,13 +1368,13 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.finished_duration,
             4)
-        exec2.finished = True
-        exec2.save()
+        chunk2.finished = True
+        chunk2.save()
         self.assertEqual(
             task1.finished_duration,
             6)
-        exec1.finished = False
-        exec1.save()
+        chunk1.finished = False
+        chunk1.save()
         self.assertEqual(
             task1.finished_duration,
             2)
@@ -1384,7 +1384,7 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.scheduled_duration,
             0)
-        exec1 = TaskExecution.objects.create(
+        chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1393,12 +1393,12 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.scheduled_duration,
             4)
-        exec1.finished = True
-        exec1.save()
+        chunk1.finished = True
+        chunk1.save()
         self.assertEqual(
             task1.scheduled_duration,
             4)
-        exec2 = TaskExecution.objects.create(
+        chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1407,13 +1407,13 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.scheduled_duration,
             6)
-        exec2.finished = True
-        exec2.save()
+        chunk2.finished = True
+        chunk2.save()
         self.assertEqual(
             task1.scheduled_duration,
             6)
-        exec1.finished = False
-        exec1.save()
+        chunk1.finished = False
+        chunk1.save()
         self.assertEqual(
             task1.scheduled_duration,
             6)
@@ -1423,7 +1423,7 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.incomplete_duration,
             42)
-        exec1 = TaskExecution.objects.create(
+        chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1432,12 +1432,12 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.incomplete_duration,
             38)
-        exec1.finished = True
-        exec1.save()
+        chunk1.finished = True
+        chunk1.save()
         self.assertEqual(
             task1.incomplete_duration,
             38)
-        exec2 = TaskExecution.objects.create(
+        chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1446,13 +1446,13 @@ class TaskTest(TestCase):
         self.assertEqual(
             task1.incomplete_duration,
             36)
-        exec2.finished = True
-        exec2.save()
+        chunk2.finished = True
+        chunk2.save()
         self.assertEqual(
             task1.incomplete_duration,
             36)
-        exec1.finished = False
-        exec1.save()
+        chunk1.finished = False
+        chunk1.save()
         self.assertEqual(
             task1.incomplete_duration,
             36)
@@ -1471,7 +1471,7 @@ class TaskTest(TestCase):
         self.assertEqual(
             set(self.user2.tasks.filter_incomplete()),
             set())
-        exec1 = TaskExecution.objects.create(
+        chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1483,7 +1483,7 @@ class TaskTest(TestCase):
         self.assertEqual(
             set(self.user2.tasks.filter_incomplete()),
             set())
-        exec2 = TaskExecution.objects.create(
+        chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1495,16 +1495,16 @@ class TaskTest(TestCase):
         self.assertEqual(
             set(self.user2.tasks.filter_incomplete()),
             set())
-        exec2.finished = True
-        exec2.save()
+        chunk2.finished = True
+        chunk2.save()
         self.assertEqual(
             set(self.user1.tasks.filter_incomplete()),
             set())
         self.assertEqual(
             set(self.user2.tasks.filter_incomplete()),
             set())
-        exec1.finished = True
-        exec1.save()
+        chunk1.finished = True
+        chunk1.save()
         self.assertEqual(
             set(self.user1.tasks.filter_incomplete()),
             set())
@@ -1518,58 +1518,58 @@ class TaskTest(TestCase):
             user=self.user1,
             duration=Decimal(42),
         )
-        exec = TaskExecution.objects.create(
+        chunk = TaskChunk.objects.create(
             task=task,
             day=self.weekdaydate1,
             day_order=1,
             duration=0,
         )
-        exec.duration = Decimal(42) - Decimal(42)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(42)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(1))
-        exec.duration = Decimal(42) - Decimal(13)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(13)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(1))
-        exec.duration = Decimal(42) - Decimal(3)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(3)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(3))
-        exec.duration = Decimal(42) - Decimal('2.5')
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal('2.5')
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal('2.5'))
-        exec.duration = Decimal(42) - Decimal('1.5')
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal('1.5')
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal('1.5'))
-        exec.duration = Decimal(42) - Decimal('0.5')
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal('0.5')
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal('0.5'))
-        exec.duration = Decimal(42) - Decimal(0)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(0)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(0))
 
         task.user = self.user2
-        exec.duration = Decimal(42) - Decimal(42)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(42)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(2))
-        exec.duration = Decimal(42) - Decimal(13)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(13)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(2))
-        exec.duration = Decimal(42) - Decimal(5)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(5)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(5))
-        exec.duration = Decimal(42) - Decimal(3)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(3)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(3))
-        exec.duration = Decimal(42) - Decimal('2.5')
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal('2.5')
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal('2.5'))
-        exec.duration = Decimal(42) - Decimal('1.5')
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal('1.5')
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal('1.5'))
-        exec.duration = Decimal(42) - Decimal('0.5')
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal('0.5')
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal('0.5'))
-        exec.duration = Decimal(42) - Decimal(0)
-        exec.save()
+        chunk.duration = Decimal(42) - Decimal(0)
+        chunk.save()
         self.assertEqual(task.default_schedule_duration, Decimal(0))
 
     def test_duration_types(self):
@@ -1583,7 +1583,7 @@ class TaskTest(TestCase):
         self.assertIsInstance(
             task1.incomplete_duration,
             Decimal)
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
             day_order=0,
@@ -1600,7 +1600,7 @@ class TaskTest(TestCase):
             Decimal)
 
 
-class TaskExecutionTest(TestCase):
+class TaskChunkTest(TestCase):
     def setUp(self):
         self.user1 = get_user_model().objects.create(
             username='johndoe',
@@ -1617,12 +1617,12 @@ class TaskExecutionTest(TestCase):
         self.weekdaydate1 = date(2017, 11, 6)
 
     @freeze_time('2017-11-16')
-    def test_missed_task_executions(self):
+    def test_missed_task_chunks(self):
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user1)),
+            list(TaskChunk.missed_chunks(self.user1)),
             [])
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user2)),
+            list(TaskChunk.missed_chunks(self.user2)),
             [])
 
         task1 = Task.objects.create(
@@ -1630,13 +1630,13 @@ class TaskExecutionTest(TestCase):
             duration=Decimal(42))
 
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user1)),
+            list(TaskChunk.missed_chunks(self.user1)),
             [])
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user2)),
+            list(TaskChunk.missed_chunks(self.user2)),
             [])
 
-        TaskExecution.objects.create(
+        TaskChunk.objects.create(
             task=task1,
             duration=1,
             day=date(2018, 1, 1),
@@ -1644,13 +1644,13 @@ class TaskExecutionTest(TestCase):
         )
 
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user1)),
+            list(TaskChunk.missed_chunks(self.user1)),
             [])
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user2)),
+            list(TaskChunk.missed_chunks(self.user2)),
             [])
 
-        exec2 = TaskExecution.objects.create(
+        chunk2 = TaskChunk.objects.create(
             task=task1,
             duration=1,
             day=date(2017, 1, 1),
@@ -1658,38 +1658,38 @@ class TaskExecutionTest(TestCase):
         )
 
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user1)),
-            [exec2])
+            list(TaskChunk.missed_chunks(self.user1)),
+            [chunk2])
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user2)),
+            list(TaskChunk.missed_chunks(self.user2)),
             [])
 
-        exec3 = TaskExecution.objects.create(
+        chunk3 = TaskChunk.objects.create(
             task=task1,
             duration=1,
             day=date(2015, 5, 1),
             day_order=1,
         )
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user1)),
-            [exec3, exec2])
+            list(TaskChunk.missed_chunks(self.user1)),
+            [chunk3, chunk2])
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user2)),
+            list(TaskChunk.missed_chunks(self.user2)),
             [])
 
-        exec3.finished = True
-        exec3.save(update_fields=('finished',))
+        chunk3.finished = True
+        chunk3.save(update_fields=('finished',))
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user1)),
-            [exec2])
+            list(TaskChunk.missed_chunks(self.user1)),
+            [chunk2])
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user2)),
+            list(TaskChunk.missed_chunks(self.user2)),
             [])
-        exec2.finished = True
-        exec2.save(update_fields=('finished',))
+        chunk2.finished = True
+        chunk2.save(update_fields=('finished',))
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user1)),
+            list(TaskChunk.missed_chunks(self.user1)),
             [])
         self.assertListEqual(
-            list(TaskExecution.missed_task_executions(self.user2)),
+            list(TaskChunk.missed_chunks(self.user2)),
             [])

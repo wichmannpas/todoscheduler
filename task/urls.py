@@ -8,7 +8,7 @@ router.register(
     views.TaskViewSet,
     base_name='task')
 router.register(
-    'taskexecution',
-    views.TaskExecutionViewSet,
-    base_name='task_execution')
+    'chunk',
+    views.TaskChunkViewSet,
+    base_name='chunk')
 urlpatterns = router.urls

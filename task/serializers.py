@@ -5,7 +5,7 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from .models import Task, TaskExecution
+from .models import Task, TaskChunk
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -97,9 +97,9 @@ class TaskIdRelatedField(serializers.RelatedField):
         return data
 
 
-class TaskExecutionSerializer(serializers.ModelSerializer):
+class TaskChunkSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TaskExecution
+        model = TaskChunk
         fields = (
             'id',
             'task',
@@ -136,14 +136,14 @@ class TaskExecutionSerializer(serializers.ModelSerializer):
             new_day = validated_data.get('day')
             if new_day and new_day != instance.day:
                 # move to another day (ignoring provided day order)
-                validated_data['day_order'] = TaskExecution.get_next_day_order(
+                validated_data['day_order'] = TaskChunk.get_next_day_order(
                     instance.task.user, new_day)
             elif 'day_order' in validated_data:
                 # exchange day order
                 day = instance.day
                 if 'day' in validated_data:
                     day = validated_data['day']
-                exchange = TaskExecution.objects.filter(
+                exchange = TaskChunk.objects.filter(
                     task__user=instance.task.user,
                     day=day,
                     day_order=validated_data['day_order'])
