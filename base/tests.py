@@ -14,7 +14,6 @@ class AuthenticatedApiTest(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create(
             username='johndoe',
-            email='a',
             workhours_weekday=Decimal(10),
             workhours_weekend=Decimal(5),
             default_schedule_duration=Decimal(1),
