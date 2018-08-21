@@ -47,8 +47,6 @@ class TaskSerializer(serializers.ModelSerializer):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
 
-    # TODO: validations for duration update (cf. TaskForm)
-
 
 class DayOrScheduleField(serializers.DateField):
     """
@@ -154,9 +152,3 @@ class TaskExecutionSerializer(serializers.ModelSerializer):
                     exchange.save(update_fields=('day_order',))
 
             return super().update(instance, validated_data)
-
-
-class DaySerializer(serializers.Serializer):
-    day = serializers.DateField()
-    executions = TaskExecutionSerializer(many=True)
-    max_duration = serializers.DecimalField(max_digits=5, decimal_places=2)

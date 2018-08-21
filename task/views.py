@@ -1,13 +1,12 @@
-from datetime import date, timedelta
-
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from .filters import TaskExecutionFilterBackend
 from .models import Task, TaskExecution
-from .serializers import DaySerializer, TaskSerializer, TaskExecutionSerializer
+from .serializers import TaskSerializer, TaskExecutionSerializer
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -22,40 +21,15 @@ class TaskViewSet(viewsets.ModelViewSet):
         return queryset.order_by(F('start').asc(nulls_first=True), 'name')
 
 
-class TaskExecutionViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin,
-                           mixins.CreateModelMixin, mixins.UpdateModelMixin):
+class TaskExecutionViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
+                           mixins.ListModelMixin, mixins.RetrieveModelMixin,
+                           mixins.UpdateModelMixin):
+    filter_backends = TaskExecutionFilterBackend,
     permission_classes = (IsAuthenticated,)
     serializer_class = TaskExecutionSerializer
 
     def get_queryset(self):
         return TaskExecution.objects.filter(task__user=self.request.user)
-
-    def list(self, request):
-        def yesterday():
-            return date.today() - timedelta(days=1)
-
-        class ParameterSerializer(serializers.Serializer):
-            first_day = serializers.DateField(default=yesterday)
-            days = serializers.IntegerField(
-                default=7,
-                min_value=1,
-                max_value=100)
-        params = ParameterSerializer(data=request.query_params)
-        if not params.is_valid():
-            return Response(params.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        if 'missed' in request.query_params:
-            return Response(self.serializer_class(
-                TaskExecution.missed_task_executions(request.user), many=True).data)
-
-        return Response(
-            DaySerializer(
-                TaskExecution.schedule_by_day(
-                    request.user,
-                    params.validated_data['first_day'],
-                    params.validated_data['days']),
-                many=True).data,
-        )
 
     def destroy(self, request, pk=None):
         class ParameterSerializer(serializers.Serializer):

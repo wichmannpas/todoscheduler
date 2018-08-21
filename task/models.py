@@ -1,6 +1,5 @@
-from typing import List, Union
+from typing import Union
 
-from collections import OrderedDict
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -10,8 +9,6 @@ from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.db.models import Sum, F, Max, QuerySet
 from django.db.models.functions import Coalesce
-
-from .day import Day
 
 
 class Task(models.Model):
@@ -109,11 +106,12 @@ class Task(models.Model):
     @staticmethod
     def free_capacity(user: get_user_model(), day: date) -> Decimal:
         """Get the free capacity of a day."""
-        executions = TaskExecution.objects.filter(
-            task__user=user, day=day)
-        day = Day(user, day)
-        day.executions = list(executions)
-        return day.available_duration
+        used_capacity = TaskExecution.objects.filter(
+            task__user=user, day=day).aggregate(
+            used_capacity=Sum('duration')
+        )['used_capacity'] or 0
+        total_capacity = user.capacity_of_day(day)
+        return total_capacity - used_capacity
 
 
 class TaskExecution(models.Model):
@@ -181,23 +179,3 @@ class TaskExecution(models.Model):
             day__lt=date.today(),
             finished=False
         ).order_by('day').select_related('task')
-
-    @staticmethod
-    def schedule_by_day(
-            user: get_user_model(),
-            first_day: date, days: int) -> List[Day]:
-        """Get an overview of the schedule."""
-        last_day = first_day + timedelta(days)
-        executions = TaskExecution.objects.filter(task__user=user).filter(
-                day__gte=first_day, day__lte=last_day).select_related('task').order_by(
-                    'day', '-finished', 'day_order')
-
-        by_day = OrderedDict()
-        day = first_day
-        # ensure that all days (even those without execution) are in the dictionary
-        while day <= last_day:
-            by_day[day] = Day(user, day)
-            day += timedelta(days=1)
-        for execution in executions:
-            by_day[execution.day].executions.append(execution)
-        return by_day.values()
