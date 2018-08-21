@@ -12,22 +12,26 @@ from django.db.models.functions import Coalesce
 
 
 class TaskQuerySet(models.QuerySet):
-    def filter_incomplete(self):
+    def incompletely_scheduled(self):
+        """
+        Filter this QuerySet for tasks that have not been completely
+        scheduled yet.
+        """
         return self.annotate(
             scheduled_duration_agg=Coalesce(
                 Sum('chunks__duration'),
                 0)).annotate(
-            incomplete_duration_agg=F(
+            unscheduled_duration_agg=F(
                 'duration') - F('scheduled_duration_agg')
-        ).filter(incomplete_duration_agg__gt=0)
+        ).filter(unscheduled_duration_agg__gt=0)
 
 
 class TaskManager(models.Manager):
     def get_queryset(self):
         return TaskQuerySet(self.model, using=self._db)
 
-    def filter_incomplete(self):
-        return self.get_queryset().filter_incomplete()
+    def incompletely_scheduled(self):
+        return self.get_queryset().incompletely_scheduled()
 
 
 class Task(models.Model):
@@ -56,45 +60,38 @@ class Task(models.Model):
         return '{}: {}'.format(self.user, self.name)
 
     @property
-    def finished_duration(self) -> Decimal:
-        if hasattr(self, 'finished_duration_agg'):
-            return self.finished_duration_agg
-        return self.chunks.filter(finished=True).aggregate(
-            Sum('duration'))['duration__sum'] or Decimal(0)
+    def completely_scheduled(self) -> bool:
+        return self.scheduled_duration == self.duration
+
+    @property
+    def finished(self) -> bool:
+        return self.finished_duration == self.duration
 
     @property
     def scheduled_duration(self) -> Decimal:
         if hasattr(self, 'scheduled_duration_agg'):
-            return self.scheduled_duration_agg
+            return self.scheduled_duration_agg or 0
         return self.chunks.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)
 
     @property
-    def incomplete_duration(self) -> Decimal:
-        """Get the duration of this task which is not yet scheduled."""
-        if hasattr(self, 'incomplete_duration_agg'):
-            return self.incomplete_duration_agg
-        return (
-            self.duration -
-            (self.chunks.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)))
+    def unscheduled_duration(self) -> Decimal:
+        """The duration which is not yet scheduled."""
+        return self.duration - self.scheduled_duration
 
     @property
-    def default_schedule_duration(self) -> Decimal:
-        """
-        Get the duration that should be suggested for scheduling
-        based on the user preferences.
-        """
-        incomplete_duration = self.incomplete_duration
-        if (
-                incomplete_duration <= self.user.default_schedule_full_duration_max or
-                incomplete_duration <= self.user.default_schedule_duration):
-            return incomplete_duration
-        return self.user.default_schedule_duration
+    def finished_duration(self) -> Decimal:
+        return self.chunks.filter(finished=True).aggregate(
+            Sum('duration'))['duration__sum'] or Decimal(0)
+
+    @property
+    def unfinished_duration(self) -> Decimal:
+        return self.duration - self.finished_duration
 
     def get_day_for_scheduling(
             self, special_date: str, duration: Decimal) -> Union[None, date]:
         """
         Determine a day on which another chunk of this task can be scheduled
-        by a special day string (i.e., 'today' or 'next_free_capacity').
+        based on a special day string (i.e., 'today' or 'next_free_capacity').
         """
         assert special_date in self.VALID_SCHEDULE_SPECIAL_DATES, 'unknown special_date value'
 
