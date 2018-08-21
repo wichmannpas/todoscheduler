@@ -2,9 +2,10 @@ from base64 import urlsafe_b64encode
 from datetime import date
 from decimal import Decimal
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.test import TestCase
 from rest_authtoken.models import AuthToken
+from rest_framework import status
 from rest_framework.test import APIClient
 
 from .models import User
@@ -67,3 +68,128 @@ class UserTest(TestCase):
         self.assertEqual(
             user.capacity_of_day(sunday),
             Decimal(4))
+
+
+class UserViewTest(AuthenticatedApiTest):
+    def test_retrieve_user(self):
+        resp = self.client.get('/base/user/')
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            resp.data['username'],
+            self.user.username)
+        self.assertEqual(
+            Decimal(resp.data['workhours_weekday']),
+            self.user.workhours_weekday)
+        self.assertEqual(
+            Decimal(resp.data['workhours_weekend']),
+            self.user.workhours_weekend)
+        self.assertEqual(
+            Decimal(resp.data['default_schedule_duration']),
+            self.user.default_schedule_duration)
+        self.assertEqual(
+            Decimal(resp.data['default_schedule_full_duration_max']),
+            self.user.default_schedule_full_duration_max)
+
+    def test_update_user(self):
+        resp = self.client.patch('/base/user/', {
+            'workhours_weekday': 3,
+            'workhours_weekend': 1,
+            'default_schedule_duration': '0.5',
+            'default_schedule_full_duration_max': 2,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.user.refresh_from_db()
+
+        self.assertEqual(
+            Decimal(resp.data['workhours_weekday']),
+            Decimal(3))
+        self.assertEqual(
+            Decimal(resp.data['workhours_weekday']),
+            self.user.workhours_weekday)
+
+        self.assertEqual(
+            Decimal(resp.data['workhours_weekend']),
+            Decimal(1))
+        self.assertEqual(
+            Decimal(resp.data['workhours_weekend']),
+            self.user.workhours_weekend)
+
+        self.assertEqual(
+            Decimal(resp.data['default_schedule_duration']),
+            Decimal('0.5'))
+        self.assertEqual(
+            Decimal(resp.data['default_schedule_duration']),
+            self.user.default_schedule_duration)
+
+        self.assertEqual(
+            Decimal(resp.data['default_schedule_full_duration_max']),
+            Decimal(2))
+        self.assertEqual(
+            Decimal(resp.data['default_schedule_full_duration_max']),
+            self.user.default_schedule_full_duration_max)
+
+    def test_update_username(self):
+        """
+        Ensure that it is not allowed to change the username.
+        """
+        self.client.patch('/base/user/', {
+            'username': 'foobar',
+        })
+        self.user.refresh_from_db()
+        self.assertNotEqual(
+            self.user.username,
+            'foobar')
+
+    def test_update_user_invalid_data(self):
+        """
+        Ensure that it is not allowed to set the user settings to
+        invalid values.
+        """
+        resp = self.client.patch('/base/user/', {
+            'workhours_weekday': -3,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+
+        resp = self.client.patch('/base/user/', {
+            'workhours_weekend': -5,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+
+        resp = self.client.patch('/base/user/', {
+            'default_schedule_duration': -5,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+
+        resp = self.client.patch('/base/user/', {
+            'default_schedule_full_duration_max': -37,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+
+    def test_update_password(self):
+        """
+        Ensure that it is not allowed to set the user settings to
+        invalid values.
+        """
+        self.assertIsNone(
+            authenticate(username=self.user.username, password='changedpassword'))
+        resp = self.client.patch('/base/user/', {
+            'password': 'changedpassword',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            authenticate(username=self.user.username, password='changedpassword'),
+            self.user)
