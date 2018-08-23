@@ -362,6 +362,16 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         self.assertEqual(
             len(resp.data),
             2)
+        resp_chunk = next(filter(lambda item: item['id'] == chunk.id, resp.data))
+        self.assertEqual(
+            Decimal(resp_chunk['duration']),
+            Decimal(1),
+            'the original chunk should have a duration of 1')
+        resp_new_chunk = next(filter(lambda item: item['id'] != chunk.id, resp.data))
+        self.assertEqual(
+            Decimal(resp_new_chunk['duration']),
+            Decimal(2),
+            'the new chunk should have the remaining duration')
 
         self.assertEqual(
             TaskChunk.objects.count(),
