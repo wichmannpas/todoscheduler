@@ -178,6 +178,11 @@ class TaskChunk(models.Model):
         self.duration = duration
         self.save(update_fields=('duration',))
 
+        # update duration in relevant_chunks
+        for chunk in relevant_chunks:
+            if chunk.id == self.id:
+                chunk.duration = self.duration
+
         # increase all future day orders
         for chunk in relevant_chunks:
             if chunk.pk == self.pk:
