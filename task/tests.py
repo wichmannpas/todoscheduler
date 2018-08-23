@@ -1168,7 +1168,11 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             set(resp.data),
             {'day', 'duration'})
 
-    def test_task_chunk_min_filter(self):
+    def test_task_chunk_nonstrict_date_filter(self):
+        """
+        Test that unfinished chunks from days prior to min_date are
+        included without strict date filtering.
+        """
         TaskChunk.objects.create(
             task=self.task,
             duration=4,
@@ -1176,11 +1180,126 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         TaskChunk.objects.create(
             task=self.task,
             duration=8,
-            day=date(2018, 1, 12))
+            day=date(2018, 1, 12),
+            finished=True)
         TaskChunk.objects.create(
             task=self.task,
             duration=2,
-            day=date(2018, 1, 17))
+            day=date(2018, 1, 17),
+            finished=True)
+
+        resp = self.client.get('/task/chunk/')
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            3)
+
+        resp = self.client.get('/task/chunk/?' + urlencode({
+            'min_date': '2018-01-16',
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            2)
+        self.assertSetEqual(
+            {ex['day'] for ex in resp.data},
+            {
+                '2018-01-15',
+                '2018-01-17',
+            })
+
+        resp = self.client.get('/task/chunk/?' + urlencode({
+            'min_date': '2018-02-14',
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            1)
+        self.assertSetEqual(
+            {ex['day'] for ex in resp.data},
+            {
+                '2018-01-15',
+            })
+
+    def test_task_chunk_strict_date_filter(self):
+        """
+        Test that unfinished chunks from days prior to min_date are
+        not included with strict date filtering.
+        """
+        TaskChunk.objects.create(
+            task=self.task,
+            duration=4,
+            day=date(2018, 1, 15))
+        TaskChunk.objects.create(
+            task=self.task,
+            duration=8,
+            day=date(2018, 1, 12),
+            finished=True)
+        TaskChunk.objects.create(
+            task=self.task,
+            duration=2,
+            day=date(2018, 1, 17),
+            finished=True)
+
+        resp = self.client.get('/task/chunk/?' + urlencode({
+            'strict_date': True,
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            3)
+
+        resp = self.client.get('/task/chunk/?' + urlencode({
+            'min_date': '2018-01-16',
+            'strict_date': True,
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            1)
+        self.assertSetEqual(
+            {ex['day'] for ex in resp.data},
+            {
+                '2018-01-17',
+            })
+
+        resp = self.client.get('/task/chunk/?' + urlencode({
+            'min_date': '2018-02-14',
+            'strict_date': True,
+        }))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            0)
+
+    def test_task_chunk_min_filter(self):
+        TaskChunk.objects.create(
+            task=self.task,
+            duration=4,
+            day=date(2018, 1, 15),
+            finished=True)
+        TaskChunk.objects.create(
+            task=self.task,
+            duration=8,
+            day=date(2018, 1, 12),
+            finished=True)
+        TaskChunk.objects.create(
+            task=self.task,
+            duration=2,
+            day=date(2018, 1, 17),
+            finished=True)
 
         resp = self.client.get('/task/chunk/')
         self.assertEqual(
@@ -1267,15 +1386,18 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         TaskChunk.objects.create(
             task=self.task,
             duration=4,
-            day=date(2018, 1, 15))
+            day=date(2018, 1, 15),
+            finished=True)
         TaskChunk.objects.create(
             task=self.task,
             duration=8,
-            day=date(2018, 1, 12))
+            day=date(2018, 1, 12),
+            finished=True)
         TaskChunk.objects.create(
             task=self.task,
             duration=2,
-            day=date(2018, 1, 17))
+            day=date(2018, 1, 17),
+            finished=True)
 
         resp = self.client.get('/task/chunk/')
         self.assertEqual(

@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import filters, serializers
 from rest_framework.exceptions import ValidationError
 
@@ -17,6 +18,10 @@ class TaskFilterBackend(filters.BaseFilterBackend):
 class TaskChunkFilterParamsSerializer(serializers.Serializer):
     min_date = serializers.DateField(required=False)
     max_date = serializers.DateField(required=False)
+    strict_date = serializers.BooleanField(
+        default=False,
+        help_text='Enforce the date range for unfinished chunks in the past as well')
+
     task_ids = serializers.ListField(
         required=False, child=serializers.IntegerField())
 
@@ -46,7 +51,11 @@ class TaskChunkFilterBackend(filters.BaseFilterBackend):
 
         min_date = params.validated_data.get('min_date')
         if min_date:
-            queryset = queryset.filter(day__gte=min_date)
+            cond = Q(day__gte=min_date)
+            if not params.validated_data['strict_date']:
+                cond |= Q(finished=False)
+
+            queryset = queryset.filter(cond)
 
         max_date = params.validated_data.get('max_date')
         if max_date:
