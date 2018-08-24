@@ -7,20 +7,29 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
-from django.db.models import Sum, F, Max, QuerySet
+from django.db.models import Sum, F, Max, Q, QuerySet
 from django.db.models.functions import Coalesce
 
 
 class TaskQuerySet(models.QuerySet):
+    def annotate_finished_duration(self):
+        return self.annotate(
+            finished_duration_agg=Coalesce(
+                Sum('chunks__duration', filter=Q(chunks__finished=True)),
+                0))
+
+    def annotate_scheduled_duration(self):
+        return self.annotate(
+            scheduled_duration_agg=Coalesce(
+                Sum('chunks__duration'),
+                0))
+
     def incompletely_scheduled(self):
         """
         Filter this QuerySet for tasks that have not been completely
         scheduled yet.
         """
-        return self.annotate(
-            scheduled_duration_agg=Coalesce(
-                Sum('chunks__duration'),
-                0)).annotate(
+        return self.annotate_scheduled_duration().annotate(
             unscheduled_duration_agg=F(
                 'duration') - F('scheduled_duration_agg')
         ).filter(unscheduled_duration_agg__gt=0)
@@ -29,6 +38,12 @@ class TaskQuerySet(models.QuerySet):
 class TaskManager(models.Manager):
     def get_queryset(self):
         return TaskQuerySet(self.model, using=self._db)
+
+    def annotate_finished_duration(self):
+        return self.get_queryset().annotate_finished_duration()
+
+    def annotate_scheduled_duration(self):
+        return self.get_queryset().annotate_scheduled_duration()
 
     def incompletely_scheduled(self):
         return self.get_queryset().incompletely_scheduled()
@@ -80,6 +95,8 @@ class Task(models.Model):
 
     @property
     def finished_duration(self) -> Decimal:
+        if hasattr(self, 'finished_duration_agg'):
+            return self.finished_duration_agg or 0
         return self.chunks.filter(finished=True).aggregate(
             Sum('duration'))['duration__sum'] or Decimal(0)
 
