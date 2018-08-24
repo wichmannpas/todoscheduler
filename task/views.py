@@ -30,7 +30,9 @@ class TaskChunkViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
     serializer_class = TaskChunkSerializer
 
     def get_queryset(self):
-        return TaskChunk.objects.filter(task__user=self.request.user)
+        return TaskChunk.objects.filter(task__user=self.request.user) \
+            .select_related('task') \
+            .prefetch_related('task__chunks')
 
     def destroy(self, request, pk=None):
         class ParameterSerializer(serializers.Serializer):
