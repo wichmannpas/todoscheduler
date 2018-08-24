@@ -86,6 +86,14 @@ class Task(models.Model):
     def scheduled_duration(self) -> Decimal:
         if hasattr(self, 'scheduled_duration_agg'):
             return self.scheduled_duration_agg or 0
+        elif hasattr(self, '_prefetched_objects_cache') and \
+                'chunks' in self._prefetched_objects_cache:
+            # aggregating in the prefetched chunks is more efficient than
+            # another db access
+            return Decimal(sum(
+                chunk.duration
+                for chunk in self.chunks.all()
+            ))
         return self.chunks.aggregate(Sum('duration'))['duration__sum'] or Decimal(0)
 
     @property
@@ -97,6 +105,15 @@ class Task(models.Model):
     def finished_duration(self) -> Decimal:
         if hasattr(self, 'finished_duration_agg'):
             return self.finished_duration_agg or 0
+        elif hasattr(self, '_prefetched_objects_cache') and \
+                'chunks' in self._prefetched_objects_cache:
+            # aggregating in the prefetched chunks is more efficient than
+            # another db access
+            return Decimal(sum(
+                chunk.duration
+                for chunk in self.chunks.all()
+                if chunk.finished
+            ))
         return self.chunks.filter(finished=True).aggregate(
             Sum('duration'))['duration__sum'] or Decimal(0)
 
