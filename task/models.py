@@ -39,12 +39,6 @@ class TaskManager(models.Manager):
     def get_queryset(self):
         return TaskQuerySet(self.model, using=self._db)
 
-    def annotate_finished_duration(self):
-        return self.get_queryset().annotate_finished_duration()
-
-    def annotate_scheduled_duration(self):
-        return self.get_queryset().annotate_scheduled_duration()
-
     def incompletely_scheduled(self):
         return self.get_queryset().incompletely_scheduled()
 
