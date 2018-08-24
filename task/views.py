@@ -16,8 +16,9 @@ class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        queryset = self.request.user.tasks.all()
-
+        queryset = self.request.user.tasks.all() \
+            .annotate_scheduled_duration() \
+            .annotate_finished_duration()
         return queryset.order_by(F('start').asc(nulls_first=True), 'name')
 
 
