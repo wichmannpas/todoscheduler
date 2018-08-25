@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models import Sum, F, Max, Q, QuerySet
 from django.db.models.functions import Coalesce
@@ -59,6 +59,13 @@ class Task(models.Model):
         max_digits=5, decimal_places=2, default=1,
         validators=(
             MinValueValidator(Decimal('0.01')),
+        ))
+
+    priority = models.IntegerField(
+        default=5, help_text='Value between 0 (lowest) and 10 (highest)',
+        validators=(
+            MinValueValidator(0),
+            MaxValueValidator(10),
         ))
 
     start = models.DateField(null=True)
