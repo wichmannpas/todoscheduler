@@ -71,6 +71,8 @@ class Task(models.Model):
     start = models.DateField(null=True)
     deadline = models.DateField(null=True)
 
+    labels = models.ManyToManyField('label.Label', related_name='tasks')
+
     objects = TaskManager()
 
     def __str__(self) -> str:

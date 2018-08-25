@@ -10,6 +10,7 @@ from freezegun import freeze_time
 from rest_framework import status
 
 from base.tests import AuthenticatedApiTest
+from label.models import Label
 from .models import Task, TaskChunk
 
 
@@ -150,6 +151,97 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             Task.objects.count(),
             0)
+
+    def test_create_task_with_labels(self):
+        """
+        Test the creation of a new task.
+        """
+        label1 = Label.objects.create(
+            user=self.user,
+            title='Test Label',
+            color='333333')
+        label2 = Label.objects.create(
+            user=self.user,
+            title='Second Label',
+            color='003333')
+
+        resp = self.client.post('/task/task/', {
+            'name': 'Testtask',
+            'duration': '2.5',
+            'priority': 7,
+            'start': '2018-05-23',
+            'deadline': '2018-05-29',
+            'labels': [label1.pk, label2.pk],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_201_CREATED)
+
+        self.assertEqual(
+            Task.objects.count(),
+            1)
+
+        task = Task.objects.first()
+        self.assertEqual(
+            task.user,
+            self.user)
+        self.assertEqual(
+            task.name,
+            'Testtask')
+        self.assertEqual(
+            task.duration,
+            Decimal('2.5'))
+        self.assertEqual(
+            task.priority,
+            7)
+        self.assertEqual(
+            task.start,
+            date(2018, 5, 23))
+        self.assertEqual(
+            task.deadline,
+            date(2018, 5, 29))
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            {label1.pk, label2.pk})
+
+        resp = self.client.post('/task/task/', {
+            'name': 'Testtask',
+            'duration': '2.5',
+            'priority': 7,
+            'start': '2018-05-23',
+            'deadline': '2018-05-29',
+            'labels': [label2.pk],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_201_CREATED)
+
+        self.assertEqual(
+            Task.objects.count(),
+            2)
+
+        task = Task.objects.filter(~Q(pk=task.pk)).first()
+        self.assertEqual(
+            task.user,
+            self.user)
+        self.assertEqual(
+            task.name,
+            'Testtask')
+        self.assertEqual(
+            task.duration,
+            Decimal('2.5'))
+        self.assertEqual(
+            task.priority,
+            7)
+        self.assertEqual(
+            task.start,
+            date(2018, 5, 23))
+        self.assertEqual(
+            task.deadline,
+            date(2018, 5, 29))
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            {label2.pk})
 
     def test_update_task_duration_less_than_scheduled(self):
         """
@@ -385,6 +477,135 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             task.duration,
             Decimal(42))
+
+    def test_partially_update_task_with_labels(self):
+        """
+        Test the update of the labels of a task.
+        """
+        label1 = Label.objects.create(
+            user=self.user,
+            title='Test Label',
+            color='333333')
+        label2 = Label.objects.create(
+            user=self.user,
+            title='Second Label',
+            color='003333')
+
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask')
+        resp = self.client.patch('/task/task/{}/'.format(task.id), {
+            'labels': [label1.pk],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            {label1.pk})
+
+        resp = self.client.patch('/task/task/{}/'.format(task.id), {
+            'labels': [],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            set())
+
+        resp = self.client.patch('/task/task/{}/'.format(task.id), {
+            'labels': [label2.pk, label1.pk],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            {label1.pk, label2.pk})
+
+        resp = self.client.patch('/task/task/{}/'.format(task.id), {
+            'labels': [label2.pk],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            {label2.pk})
+
+        resp = self.client.patch('/task/task/{}/'.format(task.id), {
+            'labels': [label1.pk],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            {label1.pk})
+
+    def test_update_task_with_labels(self):
+        """
+        Test that PUTting a task without specifying labels does not alter
+        the labels.
+        """
+        label1 = Label.objects.create(
+            user=self.user,
+            title='Test Label',
+            color='333333')
+        label2 = Label.objects.create(
+            user=self.user,
+            title='Second Label',
+            color='003333')
+
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask')
+        task.labels.add(label1)
+        task.labels.add(label2)
+
+        resp = self.client.put('/task/task/{}/'.format(task.id), {
+            'name': 'Testtask',
+            'duration': 5,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            {label1.pk, label2.pk})
+
+        resp = self.client.put('/task/task/{}/'.format(task.id), {
+            'name': 'Testtask',
+            'duration': 5,
+            'labels': [label2.pk],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            {label2.pk})
+
+        resp = self.client.put('/task/task/{}/'.format(task.id), {
+            'name': 'Testtask',
+            'duration': 5,
+            'labels': [],
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(
+            set(label.pk for label in task.labels.all()),
+            set())
 
     def test_list_all_tasks(self):
         """
