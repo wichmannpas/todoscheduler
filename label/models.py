@@ -3,6 +3,12 @@ from django.db import models
 
 
 class Label(models.Model):
+    class Meta:
+        unique_together = (
+            'user',
+            'title',
+        )
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name='labels')

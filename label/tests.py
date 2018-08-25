@@ -51,6 +51,72 @@ class LabelViewTest(AuthenticatedApiTest):
             label.color,
             '000000')
 
+    def test_create_label_duplicate_title(self):
+        """
+        Test the creation of a new label.
+        """
+        Label.objects.create(
+            user=self.user,
+            title='Test Label',
+            description='A label description.',
+            color='ffffff')
+
+        resp = self.client.post('/label/label/', {
+            'title': 'Test Label',
+            'description': 'A duplicated label\'s description.',
+            'color': '000000',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'title',
+            })
+        self.assertEqual(
+            Label.objects.count(),
+            1)
+
+    def test_create_label_duplicate_title_for_different_user(self):
+        """
+        Test the creation of a new label.
+        """
+        other_user = get_user_model().objects.create(
+            username='seconduser')
+        Label.objects.create(
+            user=other_user,
+            title='Test Label',
+            description='A label description.',
+            color='ffffff')
+
+        resp = self.client.post('/label/label/', {
+            'title': 'Test Label',
+            'description': 'A duplicated label\'s description.',
+            'color': '000000',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_201_CREATED)
+
+        self.assertEqual(
+            Label.objects.count(),
+            2)
+
+        label = Label.objects.filter(user=self.user).first()
+        self.assertEqual(
+            label.user,
+            self.user)
+        self.assertEqual(
+            label.title,
+            'Test Label')
+        self.assertEqual(
+            label.description,
+            'A duplicated label\'s description.')
+        self.assertEqual(
+            label.color,
+            '000000')
+
     def test_create_label_invalid_color(self):
         resp = self.client.post('/label/label/', {
             'title': 'Test Label',
@@ -101,7 +167,7 @@ class LabelViewTest(AuthenticatedApiTest):
             'f1f1fc')
 
         resp = self.client.post('/label/label/', {
-            'title': 'Test Label',
+            'title': 'Second Label',
             'description': 'A label description.',
             'color': 'f1f1fc',
         })
@@ -173,10 +239,6 @@ class LabelViewTest(AuthenticatedApiTest):
             label.color,
             '111111')
 
-        label = Label.objects.create(
-            user=self.user,
-            title='Test Label',
-            color='111111')
         resp = self.client.patch('/label/label/{}/'.format(label.id), {
             'color': 'ZZZZ11',
         })
