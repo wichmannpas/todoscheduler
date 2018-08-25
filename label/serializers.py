@@ -13,6 +13,20 @@ class LabelSerializer(serializers.ModelSerializer):
             'color',
         )
 
+    def validate_title(self, value: str) -> str:
+        """
+        As the serializer does not explicitly contain the user,
+        we need to check the uniqueness of this title for the user.
+        """
+        if self.instance and self.instance.title == value:
+            # title is not changed.
+            return value
+
+        if self.context['request'].user.labels.filter(title=value).exists():
+            raise ValidationError('this title is not unique.')
+
+        return value
+
     def validate_color(self, value: str) -> str:
         value = value.lower()
 
