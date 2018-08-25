@@ -46,7 +46,7 @@ Run the development server (again, see the official documentation for production
 Demo
 ----
 
-A hosted instance of TodoScheduler is available [here](https://todoscheduler.pwsrv.de).
+A hosted instance of TodoScheduler is available [here](https://todoscheduler.org).
 
 License
 -------
