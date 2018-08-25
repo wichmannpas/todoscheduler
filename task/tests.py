@@ -21,6 +21,8 @@ class TaskViewTest(AuthenticatedApiTest):
         resp = self.client.post('/task/task/', {
             'name': 'Testtask',
             'duration': '2.5',
+            'start': '2018-05-23',
+            'deadline': '2018-05-29',
         })
         self.assertEqual(
             resp.status_code,
@@ -40,6 +42,35 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             task.duration,
             Decimal('2.5'))
+        self.assertEqual(
+            task.start,
+            date(2018, 5, 23))
+        self.assertEqual(
+            task.deadline,
+            date(2018, 5, 29))
+
+    def test_create_task_invalid_deadline(self):
+        """
+        Test the creation of a new task with a deadline that is before the start.
+        """
+        resp = self.client.post('/task/task/', {
+            'name': 'Testtask',
+            'start': '2018-05-23',
+            'deadline': '2018-05-21',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'start',
+                'deadline',
+            })
+
+        self.assertEqual(
+            Task.objects.count(),
+            0)
 
     def test_create_task_invalid_duration(self):
         """
@@ -107,6 +138,80 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             task.duration,
             Decimal('0.5'))
+
+    def test_update_task_invalid_start(self):
+        """
+        Test updating a task to an invalid start.
+        """
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(2),
+            start=date(2018, 5, 23),
+            deadline=date(2018, 5, 29))
+        resp = self.client.patch('/task/task/{}/'.format(task.pk), {
+            'start': '2018-06-10',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'start'})
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.start,
+            date(2018, 5, 23))
+
+    def test_partially_update_invalid_task_dates(self):
+        """
+        Test that it is allowed to update a task that already has an invalid
+        start/deadline pair if neither start nor deadline are updated in the
+        request.
+        """
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(2),
+            start=date(2018, 5, 30),
+            deadline=date(2018, 3, 29))
+        resp = self.client.patch('/task/task/{}/'.format(task.pk), {
+            'name': 'renamed',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.name,
+            'renamed')
+
+    def test_update_task_invalid_deadline(self):
+        """
+        Test updating a task to an invalid deadline.
+        """
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(2),
+            start=date(2018, 5, 23),
+            deadline=date(2018, 5, 29))
+        resp = self.client.patch('/task/task/{}/'.format(task.pk), {
+            'deadline': '2018-05-10',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'deadline'})
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.deadline,
+            date(2018, 5, 29))
 
     def test_get_task(self):
         """
