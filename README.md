@@ -4,7 +4,7 @@ TodoScheduler [![Build Status](https://travis-ci.org/wichmannpas/todoscheduler.s
 TodoScheduler helps you managing and scheduling your tasks. You can split your tasks into chunks and schedule them for specific days.
 Scheduling all of your tasks means less postponed tasks and a higher productivity. That means more free time!
 
-This repository contains the backend of TodoScheduler (i.e., an API endpoints).
+This repository contains the backend of TodoScheduler (i.e., an API endpoint).
 There is a JavaScript [web client](https://github.com/wichmannpas/todoscheduler-webclient) that can be used as a frontend for TodoScheduler.
 
 Installation
@@ -15,7 +15,7 @@ The installation is that of a common Django app. Basically, the following steps 
 Create a virtual environment and activate it:
 
 ```
-virtualenv --python $(which python3) .pyenv
+python3 -m venv .pyenv
 . .pyenv/bin/activate
 ```
 
@@ -28,7 +28,7 @@ pip install -r requirements.txt
 Copy the example settings:
 
 ```
-cp todoscheduler/settings.py{.example,}
+cp todoscheduler/settings.py{.example.sqlite,}
 ```
 
 Migrate the database:
