@@ -21,6 +21,7 @@ class TaskViewTest(AuthenticatedApiTest):
         resp = self.client.post('/task/task/', {
             'name': 'Testtask',
             'duration': '2.5',
+            'priority': 7,
             'start': '2018-05-23',
             'deadline': '2018-05-29',
         })
@@ -42,6 +43,9 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             task.duration,
             Decimal('2.5'))
+        self.assertEqual(
+            task.priority,
+            7)
         self.assertEqual(
             task.start,
             date(2018, 5, 23))
@@ -83,6 +87,65 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(
+            Task.objects.count(),
+            0)
+
+    def test_create_task_invalid_priority(self):
+        """
+        Test the creation of a new task with a deadline that is before the start.
+        """
+        resp = self.client.post('/task/task/', {
+            'name': 'Testtask',
+            'priority': -6,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'priority',
+            })
+
+        self.assertEqual(
+            Task.objects.count(),
+            0)
+
+        resp = self.client.post('/task/task/', {
+            'name': 'Testtask',
+            'priority': 14,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'priority',
+            })
+
+        self.assertEqual(
+            Task.objects.count(),
+            0)
+
+        self.assertEqual(
+            Task.objects.count(),
+            0)
+
+        resp = self.client.post('/task/task/', {
+            'name': 'Testtask',
+            'priority': 'not a number',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {
+                'priority',
+            })
 
         self.assertEqual(
             Task.objects.count(),
@@ -212,6 +275,30 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             task.deadline,
             date(2018, 5, 29))
+
+    def test_update_task_invalid_priority(self):
+        """
+        Test updating a task to an invalid deadline.
+        """
+        task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(2))
+        resp = self.client.patch('/task/task/{}/'.format(task.pk), {
+            'priority': 42,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+        self.assertSetEqual(
+            set(resp.data),
+            {'priority'})
+
+        task.refresh_from_db()
+        self.assertEqual(
+            task.priority,
+            5,  # default priority
+        )
 
     def test_get_task(self):
         """
