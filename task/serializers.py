@@ -16,6 +16,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'name',
             'duration',
             'start',
+            'deadline',
             'scheduled_duration',
             'finished_duration',
         )
@@ -27,15 +28,36 @@ class TaskSerializer(serializers.ModelSerializer):
     def validate(self, data):
         validated_data = super().validate(data)
 
+        errors = {}
+
         if self.instance and self.instance.pk and 'duration' in validated_data:
             scheduled_duration = self.instance.scheduled_duration
             if validated_data['duration'] < scheduled_duration:
-                raise ValidationError({
-                    'duration': 'the new duration (%f) is less than the '
-                                'scheduled duration (%f).' % (
-                                    validated_data['duration'],
-                                    scheduled_duration)
-                })
+                errors['duration'] = 'the new duration (%f) is less than the ' \
+                    'scheduled duration (%f).' % (
+                        validated_data['duration'],
+                        scheduled_duration)
+
+        start = None
+        if self.instance:
+            start = self.instance.start
+        if 'start' in validated_data:
+            start = validated_data['start']
+
+        deadline = None
+        if self.instance:
+            deadline = self.instance.deadline
+        if 'deadline' in validated_data:
+            deadline = validated_data['deadline']
+
+        if start and deadline and start > deadline:
+            if 'start' in validated_data:
+                errors['start'] = 'start date may not be after the deadline'
+            if 'deadline' in validated_data:
+                errors['deadline'] = 'deadline may not be before the start date'
+
+        if errors:
+            raise ValidationError(errors)
 
         return validated_data
 

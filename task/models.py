@@ -62,6 +62,7 @@ class Task(models.Model):
         ))
 
     start = models.DateField(null=True)
+    deadline = models.DateField(null=True)
 
     objects = TaskManager()
 
