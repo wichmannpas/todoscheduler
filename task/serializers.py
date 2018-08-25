@@ -8,6 +8,14 @@ from rest_framework.exceptions import ValidationError
 from .models import Task, TaskChunk
 
 
+class TaskLabelsField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        return self.context['request'].user.labels.all()
+
+    def to_internal_value(self, data):
+        return super().to_internal_value(data)
+
+
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
@@ -18,9 +26,11 @@ class TaskSerializer(serializers.ModelSerializer):
             'priority',
             'start',
             'deadline',
+            'labels',
             'scheduled_duration',
             'finished_duration',
         )
+    labels = TaskLabelsField(many=True, required=False)
     scheduled_duration = serializers.DecimalField(
         max_digits=5, decimal_places=2, read_only=True)
     finished_duration = serializers.DecimalField(

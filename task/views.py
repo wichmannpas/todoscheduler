@@ -16,7 +16,8 @@ class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        queryset = self.request.user.tasks.all() \
+        queryset = self.request.user.tasks \
+            .prefetch_related('labels') \
             .annotate_scheduled_duration() \
             .annotate_finished_duration()
         return queryset.order_by(F('start').asc(nulls_first=True), 'name')
@@ -32,7 +33,7 @@ class TaskChunkViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
     def get_queryset(self):
         return TaskChunk.objects.filter(task__user=self.request.user) \
             .select_related('task') \
-            .prefetch_related('task__chunks')
+            .prefetch_related('task__chunks', 'task__labels')
 
     def destroy(self, request, pk=None):
         class ParameterSerializer(serializers.Serializer):
