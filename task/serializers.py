@@ -163,6 +163,8 @@ class TaskChunkSerializer(serializers.ModelSerializer):
                 if duration_delta:
                     instance.task.duration += duration_delta
                     instance.task.save()
+                    if hasattr(instance.task, '_prefetched_objects_cache'):
+                        del instance.task._prefetched_objects_cache
 
             new_day = validated_data.get('day')
             if new_day and new_day != instance.day:

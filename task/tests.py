@@ -1024,6 +1024,15 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.status_code,
             status.HTTP_200_OK)
+        self.assertEqual(
+            Decimal(resp.data['task']['duration']),
+            Decimal(5))
+        self.assertEqual(
+            Decimal(resp.data['task']['scheduled_duration']),
+            Decimal(4))
+        self.assertEqual(
+            Decimal(resp.data['task']['finished_duration']),
+            Decimal(4))
 
         task_chunk.refresh_from_db()
         self.assertEqual(
