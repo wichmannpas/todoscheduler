@@ -279,7 +279,7 @@ class TaskChunk(models.Model):
             scheduled_duration = days.get(day, 0)
             remaining_capacity = total_capacity - scheduled_duration
 
-            if remaining_capacity > min_remaining_capacity:
+            if remaining_capacity >= min_remaining_capacity:
                 return day
 
             day += timedelta(days=1)
