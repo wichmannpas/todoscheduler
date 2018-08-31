@@ -1494,6 +1494,57 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             Decimal(10))
 
     @freeze_time('2001-02-03')
+    def test_schedule_next_free_capacity_exact(self):
+        """
+        Test scheduling for the next free capacity when the chunk fits
+        exactly into a day.
+        """
+        task2 = Task.objects.create(
+            user=self.user,
+            name='Other Testtask',
+            duration=Decimal(30))
+        TaskChunk.objects.create(
+            task=task2,
+            day=self.day,  # Saturday
+            duration=Decimal(5))
+        TaskChunk.objects.create(
+            task=task2,
+            day=self.day + timedelta(days=1),  # Sunday
+            duration=Decimal(5))
+        TaskChunk.objects.create(
+            task=task2,
+            day=self.day + timedelta(days=2),  # Monday
+            duration=Decimal(7))
+
+        self.task.duration = self.user.workhours_weekday
+        self.task.save()
+
+        resp = self.client.post('/task/chunk/', {
+            'task_id': self.task.id,
+            'day': 'next_free_capacity',
+            'duration': self.user.workhours_weekday,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_201_CREATED)
+        task_chunk = TaskChunk.objects.get(
+            pk=resp.data['id'])
+        self.assertEqual(
+            task_chunk.task,
+            self.task)
+        self.assertEqual(
+            task_chunk.day,
+            self.day + timedelta(days=3))  # Tuesday
+        self.assertEqual(
+            task_chunk.duration,
+            self.user.workhours_weekday)
+
+        self.task.refresh_from_db()
+        self.assertEqual(
+            self.task.duration,
+            Decimal(10))
+
+    @freeze_time('2001-02-03')
     def test_schedule_next_free_capacity_unavailable(self):
         """Test scheduling for the next free capacity."""
         task2 = Task.objects.create(
