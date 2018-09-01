@@ -8,6 +8,7 @@ class LabelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Label
         fields = (
+            'id',
             'title',
             'description',
             'color',
