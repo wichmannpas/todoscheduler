@@ -14,7 +14,7 @@ from label.models import Label
 from .models import Task, TaskChunk
 
 
-class TaskViewTest(AuthenticatedApiTest):
+class TaskViewSetTest(AuthenticatedApiTest):
     def test_create_task(self):
         """
         Test the creation of a new task.
@@ -746,6 +746,87 @@ class TaskViewTest(AuthenticatedApiTest):
         self.assertEqual(
             resp.data[0]['name'],
             'own task')
+
+    def test_merge_task(self):
+        task1 = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(3))
+        task2 = Task.objects.create(
+            user=self.user,
+            name='To be merged Testtask',
+            duration=Decimal(2))
+
+        TaskChunk.objects.create(
+            task=task1,
+            duration=Decimal(1),
+            day=date(2010, 12, 24)),
+        TaskChunk.objects.create(
+            task=task1,
+            duration=Decimal('0.5'),
+            day=date(2010, 12, 24)),
+        TaskChunk.objects.create(
+            task=task1,
+            duration=Decimal('0.5'),
+            day=date(2010, 12, 24)),
+
+        TaskChunk.objects.create(
+            task=task2,
+            duration=Decimal('1.5'),
+            day=date(2010, 12, 24)),
+        TaskChunk.objects.create(
+            task=task2,
+            duration=Decimal('0.5'),
+            day=date(2010, 12, 24)),
+
+        resp = self.client.post('/task/task/{}/merge/{}/'.format(task1.pk, task2.pk))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+        self.assertEqual(
+            len(resp.data),
+            5)
+        for chunk in resp.data:
+            self.assertEqual(
+                chunk['task']['id'],
+                task1.pk)
+
+    def test_merge_foreign_task(self):
+        task1 = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(3))
+        task2 = Task.objects.create(
+            user=get_user_model().objects.create(username='foreign'),
+            name='Foreign Testtask',
+            duration=Decimal(2))
+
+        TaskChunk.objects.create(
+            task=task1,
+            duration=Decimal(1),
+            day=date(2010, 12, 24)),
+        TaskChunk.objects.create(
+            task=task1,
+            duration=Decimal('0.5'),
+            day=date(2010, 12, 24)),
+        TaskChunk.objects.create(
+            task=task1,
+            duration=Decimal('0.5'),
+            day=date(2010, 12, 24)),
+
+        TaskChunk.objects.create(
+            task=task2,
+            duration=Decimal('1.5'),
+            day=date(2010, 12, 24)),
+        TaskChunk.objects.create(
+            task=task2,
+            duration=Decimal('0.5'),
+            day=date(2010, 12, 24)),
+
+        resp = self.client.post('/task/task/{}/merge/{}/'.format(task1.pk, task2.pk))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_404_NOT_FOUND)
 
 
 class TaskChunkViewSetTest(AuthenticatedApiTest):
