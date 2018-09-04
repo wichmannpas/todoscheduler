@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 
 from datetime import date, timedelta
 from decimal import Decimal
@@ -157,6 +157,156 @@ class Task(models.Model):
         task.chunks.update(task_id=self.pk)
         task.delete()
         return TaskChunk.objects.filter(task_id__in=(self.pk, task.pk))
+
+
+class TaskChunkSeries(models.Model):
+    """
+    Models a series of task chunks.
+    They are used to schedule several task chunks at once.
+    Infinitive task chunk series can be used to have a series of
+    task chunks that continues to expand regularly.
+    """
+    RULE_CHOICES = (
+        ('interval', 'schedule in an interval of a fixed number of days'),
+        ('monthly', 'schedule on a specific day in an interval of a fixed number of months'),
+        ('monthlyweekday', 'schedule on a specific weekday in an interval of a fixed number of months'),
+    )
+
+    task = models.ForeignKey(
+        Task, on_delete=models.CASCADE, related_name='chunk_series')
+    duration = models.DecimalField(
+        max_digits=4, decimal_places=2, default=1,
+        validators=(
+            MinValueValidator(Decimal('0.01')),
+        ))
+
+    # the first day on which to schedule a chunk for this series
+    start = models.DateField()
+    # the last day on which a chunk may be scheduled; infinite series if null
+    end = models.DateField(null=True)
+
+    rule = models.CharField(max_length=15, choices=RULE_CHOICES)
+
+    # rule-specific parameters:
+
+    interval_days = models.IntegerField(null=True, validators=(
+        MinValueValidator(1),
+    ))
+    # the day of the month to schedule; if the month has fewer days than
+    # the specified date, the last day of the month is used
+    monthly_day = models.IntegerField(null=True, validators=(
+        MinValueValidator(1), MaxValueValidator(31),
+    ))
+    monthly_months = models.IntegerField(null=True, validators=(
+        MinValueValidator(1),
+    ))
+    # the weekday to schedule (0=mon, ..., 6=sunday)
+    monthlyweekday_weekday = models.IntegerField(null=True, validators=(
+        MinValueValidator(0), MaxValueValidator(6),
+    ))
+    # use the nth of the specified weekday of this month; if the month has
+    # fewer than n instances of that weekday, use the last of that month
+    monthlyweekday_nth = models.IntegerField(null=True, validators=(
+        MinValueValidator(1), MaxValueValidator(6),
+    ))
+
+    def __str__(self) -> str:
+        return '{}: {}'.format(self.task, self.rule)
+
+    def apply_rule(self, last: Optional[date] = None) -> Optional[date]:
+        """
+        Apply the rule of this task chunk series.
+        Finds the date on which the next occurrence should be scheduled
+        when the last was scheduled on the provided date.
+        If no last day is specified, the start date of this series is used.
+
+        If no further occurrence is to be scheduled, None is returned.
+        """
+        if last and last < self.start:
+            # if the start date is modified after chunks are scheduled
+            # already, prevent from scheduling any more chunks in the
+            # past
+            last = None
+
+        apply = getattr(self, '_apply_{}'.format(self.rule), None)
+        assert apply, 'invalid rule %s' % self.rule
+        next = apply(last)
+
+        if self.end and next > self.end:
+            return None
+
+        return next
+
+    def _apply_interval(self, last: Optional[date]) -> Optional[date]:
+        assert self.interval_days
+
+        if not last:
+            return self.start
+        return last + timedelta(days=self.interval_days)
+
+    def _apply_monthly(self, last: Optional[date], day: Optional[int] = None) -> Optional[date]:
+        assert self.monthly_day or day
+        assert self.monthly_months
+
+        if not day:
+            day = self.monthly_day
+
+        if not last:
+            return self._replace_day(self.start, day)
+
+        next = self._add_months(last, self.monthly_months)
+        return self._replace_day(next, day)
+
+    def _apply_monthlyweekday(self, last: Optional[date]) -> Optional[date]:
+        assert self.monthly_months
+        assert self.monthlyweekday_weekday
+        assert self.monthlyweekday_nth
+
+        next = self._apply_monthly(last, 1)
+
+        next = self._advance_to_weekday(next, self.monthlyweekday_weekday)
+        desired_month = next.month
+        for shift in range(self.monthlyweekday_nth - 1):
+            shifted = next + timedelta(days=7)
+            if shifted.month != desired_month:
+                # use last weekday of this month
+                break
+            next = shifted
+
+        return next
+
+    @staticmethod
+    def _add_months(day: date, months: int) -> date:
+        """
+        Add months to a date without changing the day.
+        """
+        new_month = day.month + months - 1
+        return day.replace(
+            month=(new_month % 12) + 1,
+            year=day.year + new_month // 12)
+
+    @staticmethod
+    def _advance_to_weekday(day: date, weekday: int) -> date:
+        """
+        Advance a date object until it reaches weekday, leaving it
+        untouched if it is already the right weekday.
+        """
+        while day.weekday() != weekday:
+            day += timedelta(days=1)
+        return day
+
+    @staticmethod
+    def _replace_day(day: date, replace: int) -> date:
+        """
+        Replace the day of the date, using the last day
+        of the month if it is out of range.
+        """
+        try:
+            return day.replace(day=replace)
+        except ValueError:
+            # get the last day of this month
+            day = TaskChunkSeries._add_months(day, 1).replace(day=1)
+            return day - timedelta(days=1)
 
 
 class TaskChunk(models.Model):
