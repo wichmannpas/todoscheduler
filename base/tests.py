@@ -177,6 +177,34 @@ class UserViewTest(AuthenticatedApiTest):
             resp.status_code,
             status.HTTP_400_BAD_REQUEST)
 
+        resp = self.client.patch('/base/user/', {
+            'workhours_weekday': 25,  # more than a single day
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+
+        resp = self.client.patch('/base/user/', {
+            'workhours_weekend': 25,  # more than a single day
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+
+        resp = self.client.patch('/base/user/', {
+            'default_schedule_duration': 25,  # more than a single day
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+
+        resp = self.client.patch('/base/user/', {
+            'default_schedule_full_duration_max': 25,  # more than a single day
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_400_BAD_REQUEST)
+
     def test_update_password(self):
         """
         Ensure that it is not allowed to set the user settings to
