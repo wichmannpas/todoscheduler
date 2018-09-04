@@ -141,6 +141,23 @@ class Task(models.Model):
             return TaskChunk.next_day_with_capacity(
                 self.user, duration)
 
+    @transaction.atomic
+    def merge(self, task: 'Task') -> List['TaskChunk']:
+        """
+        Merge task into this task.
+        Returns all affected task chunks.
+        """
+        assert self.pk != task.pk
+        assert task.user == self.user
+
+        a, b = Task.objects.filter(pk__in=(self.pk, task.pk)).select_for_update()
+
+        self.duration = a.duration + b.duration
+        self.save(update_fields=('duration',))
+        task.chunks.update(task_id=self.pk)
+        task.delete()
+        return TaskChunk.objects.filter(task_id__in=(self.pk, task.pk))
+
 
 class TaskChunk(models.Model):
     """
