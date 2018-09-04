@@ -11,7 +11,7 @@ from rest_framework import status
 
 from base.tests import AuthenticatedApiTest
 from label.models import Label
-from .models import Task, TaskChunk
+from .models import Task, TaskChunk, TaskChunkSeries
 
 
 class TaskViewSetTest(AuthenticatedApiTest):
@@ -2553,6 +2553,391 @@ class TaskTest(TestCase):
             AssertionError,
             task1.merge,
             task1)
+
+
+class TaskChunkSeriesTest(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create(
+            username='johndoe',
+            workhours_weekday=Decimal(10),
+            workhours_weekend=Decimal(5),
+            default_schedule_duration=Decimal(1),
+            default_schedule_full_duration_max=Decimal(3),
+        )
+        self.task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(1))
+
+    def test_str(self):
+        series = TaskChunkSeries(
+            task=self.task,
+            rule='interval')
+        self.assertEqual(
+            str(series),
+            'johndoe: Testtask: interval')
+
+    def test_add_months(self):
+        self.assertEqual(
+            TaskChunkSeries._add_months(
+                date(2010, 7, 15),
+                3),
+            date(2010, 10, 15))
+
+        self.assertEqual(
+            TaskChunkSeries._add_months(
+                date(2010, 7, 15),
+                12),
+            date(2011, 7, 15))
+
+        self.assertEqual(
+            TaskChunkSeries._add_months(
+                date(2010, 7, 15),
+                17),
+            date(2011, 12, 15))
+
+    def test_advance_to_weekday(self):
+        self.assertEqual(
+            TaskChunkSeries._advance_to_weekday(
+                date(2010, 7, 5),
+                3),
+            date(2010, 7, 8))
+
+        self.assertEqual(
+            TaskChunkSeries._advance_to_weekday(
+                date(2010, 7, 8),
+                3),
+            date(2010, 7, 8))
+
+        self.assertEqual(
+            TaskChunkSeries._advance_to_weekday(
+                date(2010, 7, 9),
+                3),
+            date(2010, 7, 15))
+
+    def test_replace_day(self):
+        self.assertEqual(
+            TaskChunkSeries._replace_day(
+                date(2010, 7, 15),
+                3),
+            date(2010, 7, 3))
+
+        self.assertEqual(
+            TaskChunkSeries._replace_day(
+                date(2012, 2, 15),
+                31),
+            date(2012, 2, 29))
+
+        self.assertEqual(
+            TaskChunkSeries._replace_day(
+                date(2012, 2, 15),
+                30),
+            date(2012, 2, 29))
+
+        self.assertEqual(
+            TaskChunkSeries._replace_day(
+                date(2011, 2, 15),
+                30),
+            date(2011, 2, 28))
+
+    def test_apply_rule_interval(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        # interval without previous occurrence schedules for start
+        self.assertEqual(
+            series.apply_rule(),
+            series.start)
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 16)),
+            date(2010, 3, 26))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 26)),
+            date(2010, 4, 5))
+
+    def test_apply_rule_interval_before_start(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 12, 24),
+            end=date(2011, 12, 24),
+            rule='interval',
+            interval_days=10)
+
+        # last before start is ignored
+        self.assertEqual(
+            series.apply_rule(date(2005, 3, 26)),
+            series.start)
+
+    def test_apply_rule_interval_end(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            end=date(2010, 12, 24),
+            rule='interval',
+            interval_days=10)
+
+        # exactly on end date
+        self.assertEqual(
+            series.apply_rule(date(2010, 12, 14)),
+            date(2010, 12, 24))
+
+        # would be after end date
+        self.assertEqual(
+            series.apply_rule(date(2010, 12, 15)),
+            None)
+        self.assertEqual(
+            series.apply_rule(date(2010, 12, 24)),
+            None)
+
+    def test_apply_rule_monthly(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 7),
+            rule='monthly',
+            monthly_day=7,
+            monthly_months=1)
+
+        # interval without previous occurrence schedules for month of start
+        self.assertEqual(
+            series.apply_rule(),
+            date(2010, 2, 7))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 16)),
+            date(2010, 4, 7))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 5)),
+            date(2010, 4, 7))
+
+    def test_apply_rule_monthly_last(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 28),
+            rule='monthly',
+            monthly_day=31,
+            monthly_months=1)
+
+        # interval without previous occurrence schedules for month of start
+        self.assertEqual(
+            series.apply_rule(),
+            date(2010, 2, 28))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 16)),
+            date(2010, 4, 30))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 5)),
+            date(2010, 4, 30))
+
+        self.assertEqual(
+            series.apply_rule(date(2012, 1, 5)),
+            date(2012, 2, 29))
+
+        self.assertEqual(
+            series.apply_rule(date(2012, 9, 5)),
+            date(2012, 10, 31))
+
+    def test_apply_rule_monthly_before_start(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 7),
+            rule='monthly',
+            monthly_day=7,
+            monthly_months=1)
+
+        # last before start is ignored
+        self.assertEqual(
+            series.apply_rule(date(2009, 10, 5)),
+            date(2010, 2, 7))
+
+    def test_apply_rule_monthly_end(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            end=date(2010, 12, 24),
+            rule='monthly',
+            monthly_day=24,
+            monthly_months=1)
+
+        # exactly on end date
+        self.assertEqual(
+            series.apply_rule(date(2010, 11, 7)),
+            series.end)
+
+        series.end = date(2010, 12, 23)
+        series.save()
+        # would be after end date
+        self.assertEqual(
+            series.apply_rule(date(2010, 12, 1)),
+            None)
+        self.assertEqual(
+            series.apply_rule(date(2010, 11, 24)),
+            None)
+
+    def test_apply_rule_multiple_monthly(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='monthly',
+            monthly_day=24,
+            monthly_months=4)
+
+        # interval without previous occurrence schedules for month of start
+        self.assertEqual(
+            series.apply_rule(),
+            date(2010, 2, 24))
+
+        series.start = date(2010, 2, 5)
+        series.save()
+        self.assertEqual(
+            series.apply_rule(),
+            date(2010, 2, 24))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 7)),
+            date(2010, 7, 24))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 11, 18)),
+            date(2011, 3, 24))
+
+    def test_apply_rule_multi_monthly_verylong(self):
+        """
+        Test for correct behaviour when using a very long interval.
+        """
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='monthly',
+            monthly_day=24,
+            monthly_months=120)  # 10 years
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 7)),
+            date(2020, 3, 24))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 11, 18)),
+            date(2020, 11, 24))
+
+    def test_apply_rule_multi_monthly_before_start(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='monthly',
+            monthly_day=24,
+            monthly_months=4)
+
+        # last before start is ignored
+        self.assertEqual(
+            series.apply_rule(date(2009, 10, 5)),
+            date(2010, 2, 24))
+
+    def test_apply_rule_multi_monthly_end(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            end=date(2010, 12, 24),
+            rule='monthly',
+            monthly_day=24,
+            monthly_months=4)
+
+        # exactly on end date
+        self.assertEqual(
+            series.apply_rule(date(2010, 8, 24)),
+            series.end)
+
+        series.end = date(2010, 12, 23)
+        series.save()
+        # would be after end date
+        self.assertEqual(
+            series.apply_rule(date(2010, 8, 24)),
+            None)
+
+    def test_apply_rule_monthlyweekday_1st(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 1),
+            rule='monthlyweekday',
+            monthly_months=1,
+            monthlyweekday_weekday=5,
+            monthlyweekday_nth=1)
+
+        # interval without previous occurrence schedules for month of start
+        self.assertEqual(
+            series.apply_rule(),
+            date(2010, 2, 6))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 16)),
+            date(2010, 4, 3))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 5)),
+            date(2010, 4, 3))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 5, 16)),
+            date(2010, 6, 5))
+
+    def test_apply_rule_monthlyweekday_2nd(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 1),
+            rule='monthlyweekday',
+            monthly_months=1,
+            monthlyweekday_weekday=5,
+            monthlyweekday_nth=2)
+
+        # interval without previous occurrence schedules for month of start
+        self.assertEqual(
+            series.apply_rule(),
+            date(2010, 2, 13))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 16)),
+            date(2010, 4, 10))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 5)),
+            date(2010, 4, 10))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 5, 16)),
+            date(2010, 6, 12))
+
+    def test_apply_rule_monthlyweekday_last(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 1),
+            rule='monthlyweekday',
+            monthly_months=1,
+            monthlyweekday_weekday=5,
+            monthlyweekday_nth=6)
+
+        # interval without previous occurrence schedules for month of start
+        self.assertEqual(
+            series.apply_rule(),
+            date(2010, 2, 27))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 16)),
+            date(2010, 4, 24))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 3, 5)),
+            date(2010, 4, 24))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 5, 16)),
+            date(2010, 6, 26))
 
 
 class TaskChunkTest(TestCase):
