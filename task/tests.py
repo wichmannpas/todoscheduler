@@ -2360,6 +2360,119 @@ class TaskTest(TestCase):
             task1.unscheduled_duration,
             Decimal)
 
+    def test_merge_tasks(self):
+        task1 = Task.objects.create(
+            user=self.user1,
+            name='Testtask',
+            duration=Decimal(3))
+        task2 = Task.objects.create(
+            user=self.user1,
+            name='To be merged Testtask',
+            duration=Decimal(2))
+
+        chunks = [
+            TaskChunk.objects.create(
+                task=task1,
+                duration=Decimal(1),
+                day=self.weekdaydate1),
+            TaskChunk.objects.create(
+                task=task1,
+                duration=Decimal('0.5'),
+                day=self.weekdaydate1),
+            TaskChunk.objects.create(
+                task=task1,
+                duration=Decimal('0.5'),
+                day=self.weekdaydate1),
+
+            TaskChunk.objects.create(
+                task=task2,
+                duration=Decimal('1.5'),
+                day=self.weekdaydate1),
+            TaskChunk.objects.create(
+                task=task2,
+                duration=Decimal('0.5'),
+                day=self.weekdaydate1),
+        ]
+
+        affected_chunks = task1.merge(task2)
+        self.assertSetEqual(
+            set(affected_chunks),
+            set(chunks))
+
+        for chunk in affected_chunks:
+            self.assertEqual(
+                chunk.task,
+                task1)
+
+        for chunk in chunks:
+            chunk.refresh_from_db()
+            self.assertEqual(
+                chunk.task,
+                task1)
+
+        # task 2 should not exist anymore
+        self.assertRaises(
+            ObjectDoesNotExist,
+            task2.refresh_from_db)
+
+        task1.refresh_from_db()
+        self.assertEqual(
+            task1.name,
+            'Testtask')
+        self.assertEqual(
+            task1.duration,
+            Decimal(5))
+
+    def test_merge_tasks_no_chunks(self):
+        task1 = Task.objects.create(
+            user=self.user1,
+            name='Testtask',
+            duration=Decimal(3))
+        task2 = Task.objects.create(
+            user=self.user1,
+            name='To be merged Testtask',
+            duration=Decimal(2))
+
+        affected_chunks = task1.merge(task2)
+        self.assertSetEqual(
+            set(affected_chunks),
+            set())
+
+        # task 2 should not exist anymore
+        self.assertRaises(
+            ObjectDoesNotExist,
+            task2.refresh_from_db)
+
+        task1.refresh_from_db()
+        self.assertEqual(
+            task1.name,
+            'Testtask')
+        self.assertEqual(
+            task1.duration,
+            Decimal(5))
+
+    def test_merge_tasks_invalid(self):
+        task1 = Task.objects.create(
+            user=self.user1,
+            name='Testtask',
+            duration=Decimal(3))
+        task2 = Task.objects.create(
+            user=self.user2,
+            name='To be merged Testtask',
+            duration=Decimal(2))
+
+        # can't merge tasks of different users
+        self.assertRaises(
+            AssertionError,
+            task1.merge,
+            task2)
+
+        # can't merge task with itself
+        self.assertRaises(
+            AssertionError,
+            task1.merge,
+            task1)
+
 
 class TaskChunkTest(TestCase):
     def setUp(self):
