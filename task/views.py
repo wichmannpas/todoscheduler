@@ -1,7 +1,8 @@
 from django.db.models import F
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ParseError, ValidationError
-from rest_framework import mixins, serializers, status, viewsets
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -21,6 +22,18 @@ class TaskViewSet(viewsets.ModelViewSet):
             .annotate_scheduled_duration() \
             .annotate_finished_duration()
         return queryset.order_by(F('start').asc(nulls_first=True), 'name')
+
+    @action(['POST'], detail=True, url_path='merge/(?P<other_pk>\d+)')
+    def merge(self, request, pk: int, other_pk: int):
+        """
+        Merge another task into this task.
+        """
+        instance = self.get_object()
+        other_instance = get_object_or_404(self.get_queryset(), pk=other_pk)
+
+        serializer = TaskChunkSerializer(
+            instance.merge(other_instance), many=True)
+        return Response(serializer.data)
 
 
 class TaskChunkViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
