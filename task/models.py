@@ -316,6 +316,9 @@ class TaskChunk(models.Model):
 
     task = models.ForeignKey(
         Task, on_delete=models.CASCADE, related_name='chunks')
+    series = models.ForeignKey(
+        TaskChunkSeries, on_delete=models.SET_NULL, related_name='chunks',
+        null=True)
     day = models.DateField()
     day_order = models.SmallIntegerField()
     duration = models.DecimalField(
