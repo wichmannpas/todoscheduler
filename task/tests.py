@@ -3543,6 +3543,113 @@ class TaskChunkSeriesSerializerTest(TestCase):
             date(2010, 5, 1))
 
 
+class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
+    def setUp(self):
+        super().setUp()
+
+        self.task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(2))
+
+    @freeze_time('2010-05-03')
+    def test_create(self):
+        """
+        Test the creation of a series, making sure that initial
+        task chunks are scheduled and returned.
+        """
+        self.assertEqual(
+            TaskChunkSeries.objects.count(),
+            0)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            0)
+
+        resp = self.client.post('/task/chunk/series/', {
+            'task_id': self.task.pk,
+            'duration': '2',
+            'start': '2010-05-23',
+            'end': '2010-06-23',
+            'rule': 'interval',
+            'interval_days': 1,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_201_CREATED)
+
+        self.assertSetEqual(
+            set(resp.data.keys()),
+            {'series', 'scheduled'})
+
+        self.assertEqual(
+            resp.data['series']['task_id'],
+            self.task.pk)
+        self.assertEqual(
+            Decimal(resp.data['series']['duration']),
+            Decimal(2))
+        self.assertEqual(
+            resp.data['series']['start'],
+            '2010-05-23')
+        self.assertEqual(
+            resp.data['series']['end'],
+            '2010-06-23')
+        self.assertEqual(
+            resp.data['series']['rule'],
+            'interval')
+        self.assertEqual(
+            resp.data['series']['interval_days'],
+            1)
+
+        self.assertEqual(
+            len(resp.data['scheduled']),
+            32)
+
+        self.assertEqual(
+            TaskChunkSeries.objects.count(),
+            1)
+        series = TaskChunkSeries.objects.first()
+        self.assertTrue(
+            series.completely_scheduled)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            32)
+
+    def test_partial_update(self):
+        """
+        Test that it is not allowed to partially update a task chunk series.
+        """
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=7)
+
+        resp = self.client.patch('/task/chunk/series/{}/'.format(series.pk), {
+            'duration': '2.5',
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_no_getting_of_foreign(self):
+        foreign_user = get_user_model().objects.create(
+            username='foreign')
+        foreign_task = Task.objects.create(
+            user=foreign_user,
+            name='Testtask',
+            duration=Decimal(2))
+        series = TaskChunkSeries.objects.create(
+            task=foreign_task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=7)
+        resp = self.client.get('/task/chunk/series/{}/'.format(series.id))
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_404_NOT_FOUND)
+
+
 class TaskChunkTest(TestCase):
     def setUp(self):
         self.user1 = get_user_model().objects.create(

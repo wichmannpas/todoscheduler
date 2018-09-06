@@ -1,14 +1,15 @@
+from django.db import transaction
 from django.db.models import F
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ParseError, ValidationError
+from rest_framework.exceptions import MethodNotAllowed, ParseError, ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import TaskChunkFilterBackend, TaskFilterBackend
-from .models import TaskChunk
-from .serializers import TaskSerializer, TaskChunkSerializer
+from .models import TaskChunk, TaskChunkSeries
+from .serializers import TaskSerializer, TaskChunkSerializer, TaskChunkSeriesSerializer
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -36,6 +37,33 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+class TaskChunkSeriesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin,
+                             mixins.RetrieveModelMixin, mixins.UpdateModelMixin):
+    permission_classes = IsAuthenticated,
+    serializer_class = TaskChunkSeriesSerializer
+
+    def get_queryset(self):
+        return TaskChunkSeries.objects.filter(task__user=self.request.user) \
+            .select_related('task')
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+
+        scheduled = instance.schedule()
+        scheduled_serializer = TaskChunkSerializer(scheduled, many=True)
+
+        return Response({
+            'series': serializer.data,
+            'scheduled': scheduled_serializer.data,
+        }, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, *args, **kwargs):
+        raise MethodNotAllowed('PATCH')
+
+
 class TaskChunkViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
                        mixins.ListModelMixin, mixins.RetrieveModelMixin,
                        mixins.UpdateModelMixin):
@@ -45,8 +73,11 @@ class TaskChunkViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
 
     def get_queryset(self):
         return TaskChunk.objects.filter(task__user=self.request.user) \
-            .select_related('task') \
-            .prefetch_related('task__chunks', 'task__labels')
+            .select_related(
+                'task',
+                'series',
+                'series__task'
+            ).prefetch_related('task__chunks', 'task__labels')
 
     def destroy(self, request, pk=None):
         class ParameterSerializer(serializers.Serializer):
