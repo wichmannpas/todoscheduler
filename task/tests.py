@@ -3490,6 +3490,33 @@ class TaskChunkSeriesSerializerTest(TestCase):
             AssertionError,
             serializer.save)
 
+    def test_validation_update_change_task(self):
+        instance = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        task2 = Task.objects.create(
+            user=self.user,
+            name='Second Testtask',
+            duration=Decimal(1))
+
+        serializer = TaskChunkSeriesSerializer(instance=instance, data={
+            'task_id': task2.pk,
+            'start': '2010-02-24',
+            'rule': 'interval',
+            'interval_days': 10,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {'task_id'})
+        self.assertRaises(
+            AssertionError,
+            serializer.save)
+
     def test_validation_update_change_end(self):
         instance = TaskChunkSeries.objects.create(
             task=self.task,
