@@ -5,13 +5,16 @@ from urllib.parse import urlencode
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from django.http import HttpRequest
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
+from rest_framework.request import Request
 
 from base.tests import AuthenticatedApiTest
 from label.models import Label
 from .models import Task, TaskChunk, TaskChunkSeries
+from .serializers import TaskChunkSeriesSerializer
 
 
 class TaskViewSetTest(AuthenticatedApiTest):
@@ -2938,6 +2941,355 @@ class TaskChunkSeriesTest(TestCase):
         self.assertEqual(
             series.apply_rule(date(2010, 5, 16)),
             date(2010, 6, 26))
+
+
+class TaskChunkSeriesSerializerTest(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create(
+            username='johndoe',
+            workhours_weekday=Decimal(10),
+            workhours_weekend=Decimal(5),
+            default_schedule_duration=Decimal(1),
+            default_schedule_full_duration_max=Decimal(3),
+        )
+        self.task = Task.objects.create(
+            user=self.user,
+            name='Testtask',
+            duration=Decimal(1))
+
+        # we need an authenticated request
+        self.request = Request(HttpRequest())
+        self.request.user = self.user
+
+        self.context = {
+            'request': self.request,
+        }
+
+    def test_validation_invalid_rule(self):
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'invalid',
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {'rule'})
+
+    def test_validation_interval(self):
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'interval',
+            # interval_days missing
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {'interval_days'})
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'interval',
+            'interval_days': 7,
+
+            # fields for other rules
+            'monthly_day': 17,
+            'monthly_months': 1,
+            'monthlyweekday_weekday': 0,
+            'monthlyweekday_nth': 2,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {
+                'monthly_day',
+                'monthly_months',
+                'monthlyweekday_weekday',
+                'monthlyweekday_nth'
+            })
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'interval',
+            'interval_days': 7,
+        }, context=self.context)
+        self.assertTrue(
+            serializer.is_valid())
+
+    def test_validation_monthly(self):
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'monthly',
+            # monthly_day missing
+            # monthly_months missing
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {
+                'monthly_day',
+                'monthly_months',
+            })
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'monthly',
+            'monthly_day': 3,
+            'monthly_months': 1,
+
+            # fields for other rules
+            'interval_days': 7,
+            'monthlyweekday_weekday': 0,
+            'monthlyweekday_nth': 2,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {
+                'interval_days',
+                'monthlyweekday_weekday',
+                'monthlyweekday_nth',
+            })
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'monthly',
+            'monthly_day': 7,  # not the same day as start date
+            'monthly_months': 1,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {'monthly_day'})
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'monthly',
+            'monthly_day': 3,
+            'monthly_months': 1,
+        }, context=self.context)
+
+        self.assertTrue(
+            serializer.is_valid())
+
+    def test_validation_monthly_last_day_of_month(self):
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-01-31',
+            'rule': 'monthly',
+            'monthly_day': 31,
+            'monthly_months': 1,
+        }, context=self.context)
+        self.assertTrue(
+            serializer.is_valid())
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-02-28',
+            'rule': 'monthly',
+            'monthly_day': 31,  # not the same as start date, but end of month
+            'monthly_months': 1,
+        }, context=self.context)
+        self.assertTrue(
+            serializer.is_valid())
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2008-02-29',  # lap year
+            'rule': 'monthly',
+            'monthly_day': 31,  # not the same as start date, but end of month
+            'monthly_months': 1,
+        }, context=self.context)
+        self.assertTrue(
+            serializer.is_valid())
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-04-30',
+            'rule': 'monthly',
+            'monthly_day': 31,  # not the same as start date, but end of month
+            'monthly_months': 1,
+        }, context=self.context)
+
+        self.assertTrue(
+            serializer.is_valid())
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-01-30',
+            'rule': 'monthly',
+            'monthly_day': 31,  # not the same as start date and not end of month
+            'monthly_months': 1,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {'monthly_day'})
+
+    def test_validation_monthlyweekday(self):
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'monthlyweekday',
+            # monthly_months missing
+            # monthlyweekday_weekday missing
+            # monthlyweekday_nth missing
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {
+                'monthly_months',
+                'monthlyweekday_weekday',
+                'monthlyweekday_nth',
+            })
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'monthlyweekday',
+            'monthly_months': 1,
+            'monthlyweekday_weekday': 0,
+            'monthlyweekday_nth': 2,
+
+            # fields for other rules
+            'interval_days': 7,
+            'monthly_day': 7,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {
+                'interval_days',
+                'monthly_day',
+            })
+
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-05-03',
+            'rule': 'monthlyweekday',
+            'monthly_months': 1,
+            'monthlyweekday_weekday': 0,
+            'monthlyweekday_nth': 2,
+        }, context=self.context)
+        self.assertTrue(
+            serializer.is_valid())
+
+    def test_update_interval(self):
+        instance = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        serializer = TaskChunkSeriesSerializer(instance=instance, data={
+            'task_id': self.task.pk,
+            'start': '2010-02-24',
+            'rule': 'interval',
+            'interval_days': 7,
+        }, context=self.context)
+        self.assertTrue(
+            serializer.is_valid())
+        serializer.save()
+        instance.refresh_from_db()
+        self.assertEqual(
+            instance.task,
+            self.task)
+        self.assertEqual(
+            instance.start,
+            date(2010, 2, 24))
+        self.assertEqual(
+            instance.rule,
+            'interval')
+        self.assertEqual(
+            instance.interval_days,
+            7)
+
+    def test_validation_update_change_rule(self):
+        instance = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        serializer = TaskChunkSeriesSerializer(instance=instance, data={
+            'task_id': self.task.pk,
+            'start': '2010-02-24',
+            'rule': 'monthly',
+            'monthly_day': 15,
+            'monthly_months': 2,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {'rule'})
+        self.assertRaises(
+            AssertionError,
+            serializer.save)
+
+    def test_validation_update_change_start(self):
+        instance = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        serializer = TaskChunkSeriesSerializer(instance=instance, data={
+            'task_id': self.task.pk,
+            'start': '2010-02-14',
+            'rule': 'interval',
+            'interval_days': 10,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {'start'})
+        self.assertRaises(
+            AssertionError,
+            serializer.save)
+
+    def test_validation_update_change_end(self):
+        instance = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        serializer = TaskChunkSeriesSerializer(instance=instance, data={
+            'task_id': self.task.pk,
+            'start': '2010-02-24',
+            'end': '2010-05-01',
+            'rule': 'interval',
+            'interval_days': 10,
+        }, context=self.context)
+        self.assertTrue(
+            serializer.is_valid())
+        serializer.save()
+        instance.refresh_from_db()
+        self.assertEqual(
+            instance.start,
+            date(2010, 2, 24))
+        self.assertEqual(
+            instance.end,
+            date(2010, 5, 1))
 
 
 class TaskChunkTest(TestCase):
