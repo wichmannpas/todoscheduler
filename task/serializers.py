@@ -115,11 +115,6 @@ class DayOrScheduleField(serializers.DateField):
 
 
 class TaskIdRelatedField(serializers.RelatedField):
-    def __init__(self, **kwargs):
-        kwargs['write_only'] = True
-
-        super().__init__(**kwargs)
-
     def get_queryset(self):
         return self.context['request'].user.tasks.all()
 
@@ -129,6 +124,9 @@ class TaskIdRelatedField(serializers.RelatedField):
         except ObjectDoesNotExist:
             raise ValidationError('task does not exist')
         return data
+
+    def to_representation(self, value):
+        return value
 
 
 class TaskChunkSerializer(serializers.ModelSerializer):
@@ -146,7 +144,7 @@ class TaskChunkSerializer(serializers.ModelSerializer):
     day = DayOrScheduleField()
     day_order = serializers.IntegerField(max_value=32767, min_value=-32768, required=False)
     task = TaskSerializer(read_only=True)
-    task_id = TaskIdRelatedField()
+    task_id = TaskIdRelatedField(write_only=True)
 
     def create(self, validated_data):
         with transaction.atomic():
