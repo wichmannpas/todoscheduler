@@ -43,6 +43,15 @@ Run the development server (again, see the official documentation for production
 ./manage.py runserver
 ```
 
+Cron
+----
+
+For the scheduling of task chunk series, you need to run the following regularly (e.g., once daily):
+
+```
+./manage.py scheduletaskchunkseries
+```
+
 Demo
 ----
 
