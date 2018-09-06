@@ -135,12 +135,14 @@ class TaskChunkSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'task',
+            'series',
             'task_id',
             'day',
             'day_order',
             'duration',
             'finished',
         )
+    series = serializers.PrimaryKeyRelatedField(read_only=True)
     day = DayOrScheduleField()
     day_order = serializers.IntegerField(max_value=32767, min_value=-32768, required=False)
     task = TaskSerializer(read_only=True)
@@ -194,6 +196,7 @@ class TaskChunkSeriesSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskChunkSeries
         fields = (
+             'id',
              'task_id',
              'duration',
              'start',
