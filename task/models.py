@@ -228,9 +228,6 @@ class TaskChunkSeries(models.Model):
         Schedule (more) task chunks for this series.
         Creates at most max_count new instances and at most max_advance days
         into the future.
-
-        *Warning*: the returned list of TaskChunk objects is not guaranteed to contain
-        id values!
         """
         new_instances = []
         day = self.last_scheduled_day

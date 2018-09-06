@@ -7,10 +7,6 @@ python:
   - 3.7-dev  # travis seems not ready for stable 3.7 yet
   - 3.8-dev
 
-env:
-  - DB=sqlite
-  - DB=postgres
-
 addons:
   postgresql: "9.6"
 
@@ -22,10 +18,10 @@ install:
   - pip-compile --output-file requirements-testing.txt requirements-testing.in requirements.in
   - pip install -r requirements-testing.txt
   - pip install codecov
-  - sh -c "if [ '$DB' = 'postgres' ]; then pip install psycopg2-binary; fi"
+  - pip install psycopg2-binary
 
 before_script:
-  - cp todoscheduler/settings.py.example.${DB} todoscheduler/settings.py
+  - cp todoscheduler/settings.py.example todoscheduler/settings.py
   - psql -c "CREATE USER todoscheduler WITH ENCRYPTED PASSWORD 'todoscheduler' CREATEDB;" -U postgres
 
 script:

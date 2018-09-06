@@ -59,8 +59,6 @@ docs/_build/
 # PyBuilder
 target/
 
-.idea
-db.sqlite3
 todoscheduler/settings.py
 
 .pyenv
