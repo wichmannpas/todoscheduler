@@ -1,11 +1,14 @@
+from collections import defaultdict
+from datetime import date, timedelta
 from decimal import Decimal
+from typing import DefaultDict, List
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ErrorDetail, ValidationError
 
-from .models import Task, TaskChunk
+from .models import Task, TaskChunk, TaskChunkSeries
 
 
 class TaskLabelsField(serializers.PrimaryKeyRelatedField):
@@ -187,3 +190,115 @@ class TaskChunkSerializer(serializers.ModelSerializer):
                 del instance.task._prefetched_objects_cache
 
             return super().update(instance, validated_data)
+
+
+class TaskChunkSeriesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskChunkSeries
+        fields = (
+             'task_id',
+             'duration',
+             'start',
+             'end',
+             'rule',
+             'interval_days',
+             'monthly_day',
+             'monthly_months',
+             'monthlyweekday_weekday',
+             'monthlyweekday_nth',
+        )
+
+    task_id = TaskIdRelatedField()
+
+    def validate_rule(self, value: str) -> str:
+        if self.instance and value != self.instance.rule:
+            raise ValidationError(
+                'changing the rule of an existing series is not allowed')
+        return value
+
+    def validate_start(self, value: str) -> str:
+        if self.instance and value != self.instance.start:
+            raise ValidationError(
+                'changing the start of an existing series is not allowed')
+        return value
+
+    def validate(self, data):
+        rule_fields = {
+             'interval_days',
+             'monthly_day',
+             'monthly_months',
+             'monthlyweekday_weekday',
+             'monthlyweekday_nth',
+        }
+        errors = defaultdict(list)
+        if data['rule'] == 'interval':
+            fields = {
+                'interval_days',
+            }
+            self._update_errors(
+                data, errors,
+                list(fields),
+                list(rule_fields - fields))
+        elif data['rule'] == 'monthly':
+            fields = {
+                'monthly_day',
+                'monthly_months',
+            }
+            self._update_errors(
+                data, errors,
+                list(fields),
+                list(rule_fields - fields))
+        elif data['rule'] == 'monthlyweekday':
+            fields = {
+                'monthly_months',
+                'monthlyweekday_weekday',
+                'monthlyweekday_nth',
+            }
+            self._update_errors(
+                data, errors,
+                list(fields),
+                list(rule_fields - fields))
+
+        start = data.get('start')
+        monthly_day = data.get('monthly_day')
+        if start and monthly_day:
+            try:
+                data['monthly_day'] = self._validate_monthly_day(start, monthly_day)
+            except ValidationError as error:
+                errors['monthly_day'].append(error)
+
+        if errors:
+            raise ValidationError(errors)
+
+        return data
+
+    def _update_errors(
+            self, data: dict, errors: DefaultDict[str, List],
+            required: List[str], disallowed: List[str]):
+        """
+        Update the errors dict in-place to reflect violations of
+        the required and disallowed fields.
+        """
+        for field in required:
+            if data.get(field) is None:
+                if field not in errors:
+                    errors[field] = []
+                errors[field].append(ErrorDetail('This field is required.', code='required'))
+        for field in disallowed:
+            if data.get(field) is not None:
+                if field not in errors:
+                    errors[field] = []
+                errors[field].append(ErrorDetail('This field is not allowed.', code='disallowed'))
+
+    def _validate_monthly_day(self, start: date, monthly_day: int) -> int:
+        """
+        Validate the monthly day based on the start date.
+        """
+        last_day_of_month = False
+        if (start + timedelta(days=1)).month != start.month:
+            last_day_of_month = True
+
+        if not last_day_of_month and start.day != monthly_day:
+            raise ValidationError('monthly day must be the same as the day of the start date')
+
+        return monthly_day
