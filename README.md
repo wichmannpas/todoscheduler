@@ -11,6 +11,7 @@ Installation
 ------------
 
 The installation is that of a common Django app. Basically, the following steps are required (for advanced configuration as well as a production-suitable database, see the official [Django documentation](https://docs.djangoproject.com/)):
+It is assumed that a postgres database server is running on localhost with a user `todoscheduler` with password `todoscheduler`, that has access to a database `todoscheduler`.
 
 Create a virtual environment and activate it:
 
@@ -28,7 +29,7 @@ pip install -r requirements.txt
 Copy the example settings:
 
 ```
-cp todoscheduler/settings.py{.example.sqlite,}
+cp todoscheduler/settings.py{.example,}
 ```
 
 Migrate the database:
@@ -51,6 +52,13 @@ For the scheduling of task chunk series, you need to run the following regularly
 ```
 ./manage.py scheduletaskchunkseries
 ```
+
+Database Support
+----------------
+
+The only officially supported database backend is Postgresql.
+While most of the features work with other databases like sqlite, some do not.
+For example, the scheduling of task chunk series uses bulk creation that requires RETURNING inserts such that the ids of all objects are available from the single INSERT query.
 
 Demo
 ----
