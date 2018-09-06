@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Task, TaskChunk
+from .models import Task, TaskChunk, TaskChunkSeries
 
 
 @admin.register(Task)
@@ -18,4 +18,12 @@ class TaskChunkAdmin(admin.ModelAdmin):
         'day',
         'duration',
         'task',
+    )
+
+
+@admin.register(TaskChunkSeries)
+class TaskChunkSeriesAdmin(admin.ModelAdmin):
+    list_display = (
+        'task',
+        'duration',
     )

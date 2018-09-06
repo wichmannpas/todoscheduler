@@ -166,6 +166,9 @@ class TaskChunkSeries(models.Model):
     Infinitive task chunk series can be used to have a series of
     task chunks that continues to expand regularly.
     """
+    class Meta:
+        verbose_name_plural = 'task chunk series'
+
     RULE_CHOICES = (
         ('interval', 'schedule in an interval of a fixed number of days'),
         ('monthly', 'schedule on a specific day in an interval of a fixed number of months'),
