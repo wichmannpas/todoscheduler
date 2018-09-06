@@ -185,6 +185,9 @@ class TaskChunkSeries(models.Model):
     # the last day on which a chunk may be scheduled; infinite series if null
     end = models.DateField(null=True)
 
+    last_scheduled_day = models.DateField(null=True)
+    completely_scheduled = models.BooleanField(default=False)
+
     rule = models.CharField(max_length=15, choices=RULE_CHOICES)
 
     # rule-specific parameters:
@@ -212,6 +215,57 @@ class TaskChunkSeries(models.Model):
 
     def __str__(self) -> str:
         return '{}: {}'.format(self.task, self.rule)
+
+    @transaction.atomic
+    def schedule(
+            self,
+            max_count: int = 50,
+            max_advance: timedelta = timedelta(days=365)) -> List['TaskChunk']:
+        """
+        Schedule (more) task chunks for this series.
+        Creates at most max_count new instances and at most max_advance days
+        into the future.
+
+        *Warning*: the returned list of TaskChunk objects is not guaranteed to contain
+        id values!
+        """
+        new_instances = []
+        day = self.last_scheduled_day
+        advance_base = date.today()
+        for i in range(max_count):
+            day = self.apply_rule(day)
+
+            if day is None:
+                # no further instance to schedule, complete now
+                self.completely_scheduled = True
+                self.save(update_fields=('completely_scheduled',))
+                break
+
+            if advance_base:
+                advance = day - advance_base
+                if advance > max_advance:
+                    # reached limit for this schedule
+                    break
+
+            # TODO: find a way to determine the day order by a subquery
+            # to prevent using a single query for each day
+            # (or, at least, bundle the days and aggregate all day orders
+            # at once)
+            new_instances.append(
+                TaskChunk(
+                    task=self.task,
+                    series=self,
+                    day=day,
+                    day_order=TaskChunk.get_next_day_order(self.task.user, day),
+                    duration=self.duration,
+                ))
+
+        if new_instances:
+            TaskChunk.objects.bulk_create(new_instances)
+            self.last_scheduled_day = new_instances[-1].day
+            self.save(update_fields=('last_scheduled_day',))
+
+        return new_instances
 
     def apply_rule(self, last: Optional[date] = None) -> Optional[date]:
         """
