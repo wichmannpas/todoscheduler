@@ -1,9 +1,11 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from io import StringIO
 from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.management import call_command
 from django.db.models import Q
 from django.http import HttpRequest
 from django.test import TestCase
@@ -15,6 +17,81 @@ from base.tests import AuthenticatedApiTest
 from label.models import Label
 from .models import Task, TaskChunk, TaskChunkSeries
 from .serializers import TaskChunkSeriesSerializer
+
+
+class ManagementTest(TestCase):
+    def setUp(self):
+        self.user1 = get_user_model().objects.create(
+            username='johndoe',
+            workhours_weekday=Decimal(10),
+            workhours_weekend=Decimal(5),
+            default_schedule_duration=Decimal(1),
+            default_schedule_full_duration_max=Decimal(3),
+        )
+        self.user2 = get_user_model().objects.create(
+            username='foobar',
+            default_schedule_duration=Decimal(2),
+            default_schedule_full_duration_max=Decimal(5),
+        )
+
+    @freeze_time('2010-05-03')
+    def test_schedule_task_chunk_series(self):
+        task1 = Task.objects.create(
+            user=self.user1,
+            name='Testtask',
+            duration=Decimal(2))
+        series1 = TaskChunkSeries.objects.create(
+            task=task1,
+            start=date(2010, 5, 3),
+            duration=Decimal('0.5'),
+            rule='interval',
+            interval_days=182)  # 3 chunks will be scheduled within the next year
+
+        task2 = Task.objects.create(
+            user=self.user1,
+            name='Testtask 2',
+            duration=Decimal(4))
+        series2 = TaskChunkSeries.objects.create(
+            task=task2,
+            start=date(2011, 4, 3),
+            duration=Decimal('2.5'),
+            rule='interval',
+            interval_days=25)  # 2 chunks will be scheduled within the next year
+
+        task3 = Task.objects.create(
+            user=self.user2,
+            name='Testtask 3',
+            duration=Decimal(4))
+        series3 = TaskChunkSeries.objects.create(
+            task=task3,
+            start=date(2010, 7, 3),
+            end=date(2010, 8, 3),
+            duration=Decimal('2.5'),
+            rule='interval',
+            interval_days=1)  # 32 chunks will be scheduled within the next year
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            0)
+
+        out = StringIO()
+        call_command('scheduletaskchunkseries', stdout=out)
+
+        self.assertEqual(
+            TaskChunk.objects.filter(series=series1).count(),
+            3)
+        self.assertEqual(
+            TaskChunk.objects.filter(series=series2).count(),
+            2)
+        self.assertEqual(
+            TaskChunk.objects.filter(series=series3).count(),
+            32)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            37)
+
+        self.assertIn('scheduled 37 chunks for 3 series', out.getvalue())
 
 
 class TaskViewSetTest(AuthenticatedApiTest):
