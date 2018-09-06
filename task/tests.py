@@ -2942,6 +2942,131 @@ class TaskChunkSeriesTest(TestCase):
             series.apply_rule(date(2010, 5, 16)),
             date(2010, 6, 26))
 
+    def test_schedule_limit_count(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            0)
+
+        scheduled = series.schedule(max_count=5)
+        self.assertEqual(
+            len(scheduled),
+            5)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            5)
+
+        scheduled = series.schedule(max_count=5)
+        self.assertEqual(
+            len(scheduled),
+            5)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            10)
+
+    def test_schedule_limit_advance(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            0)
+
+        with freeze_time('2010-02-24'):
+            scheduled = series.schedule(max_advance=timedelta(days=10))
+        self.assertEqual(
+            len(scheduled),
+            2)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            2)
+
+        with freeze_time('2010-03-06'):
+            scheduled = series.schedule(max_advance=timedelta(days=10))
+        self.assertEqual(
+            len(scheduled),
+            1)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            3)
+        self.assertSetEqual(
+            set(chunk['day'] for chunk in TaskChunk.objects.values('day')),
+            {
+                date(2010, 2, 24),
+                date(2010, 2, 24) + timedelta(days=10),
+                date(2010, 2, 24) + timedelta(days=20),
+            })
+
+    def test_schedule_end(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            end=date(2010, 4, 24),
+            rule='interval',
+            interval_days=7)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            0)
+
+        scheduled = series.schedule()
+        self.assertEqual(
+            len(scheduled),
+            9)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            9)
+
+        scheduled = series.schedule(max_advance=timedelta(days=10))
+        self.assertEqual(
+            len(scheduled),
+            0)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            9)
+        self.assertSetEqual(
+            set(chunk['day'] for chunk in TaskChunk.objects.values('day')),
+            {
+                date(2010, 2, 24) + timedelta(days=7 * n)
+                for n in range(9)
+            })
+
+    @freeze_time('2010-02-24')
+    def test_schedule_infinite(self):
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=7)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            0)
+
+        for n in range(10):
+            scheduled = series.schedule(max_advance=timedelta(days=3650))
+            self.assertEqual(
+                len(scheduled),
+                50)
+            self.assertEqual(
+                TaskChunk.objects.count(),
+                50 * (n + 1))
+
+        self.assertSetEqual(
+            set(chunk['day'] for chunk in TaskChunk.objects.values('day')),
+            {
+                date(2010, 2, 24) + timedelta(days=7 * n)
+                for n in range(10 * 50)
+            })
+
 
 class TaskChunkSeriesSerializerTest(TestCase):
     def setUp(self):
