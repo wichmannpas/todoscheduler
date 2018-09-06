@@ -220,6 +220,12 @@ class TaskChunkSeriesSerializer(serializers.ModelSerializer):
                 'changing the start of an existing series is not allowed')
         return value
 
+    def validate_task_id(self, value: str) -> str:
+        if self.instance and value != self.instance.task_id:
+            raise ValidationError(
+                'changing the task of an existing series is not allowed')
+        return value
+
     def validate(self, data):
         rule_fields = {
              'interval_days',
