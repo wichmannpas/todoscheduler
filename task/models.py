@@ -261,9 +261,16 @@ class TaskChunkSeries(models.Model):
                 ))
 
         if new_instances:
+            # create the new instances
             TaskChunk.objects.bulk_create(new_instances)
             self.last_scheduled_day = new_instances[-1].day
             self.save(update_fields=('last_scheduled_day',))
+
+            # update the duration of the task
+            self.task.duration = F('duration') + self.duration * len(new_instances)
+            self.task.save(update_fields=('duration',))
+            # refresh the task from the db to get the actual duration value
+            self.task.refresh_from_db()
 
         return new_instances
 

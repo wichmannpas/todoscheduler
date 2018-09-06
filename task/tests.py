@@ -3144,6 +3144,28 @@ class TaskChunkSeriesTest(TestCase):
                 for n in range(10 * 50)
             })
 
+    def test_schedule_increases_task_duration(self):
+        """
+        Test that newly scheduled task chunks increase the task
+        duration.
+        """
+        initial_task_duration = self.task.duration
+
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=7)
+        scheduled = series.schedule(max_advance=timedelta(days=3650))
+        self.assertEqual(
+            len(scheduled),
+            50)
+
+        self.task.refresh_from_db()
+        self.assertEqual(
+            self.task.duration,
+            initial_task_duration + series.duration * 50)
+
 
 class TaskChunkSeriesSerializerTest(TestCase):
     def setUp(self):
