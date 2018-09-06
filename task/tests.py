@@ -3553,6 +3553,44 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
             duration=Decimal(2))
 
     @freeze_time('2010-05-03')
+    def test_defined_ids(self):
+        """
+        Test that the scheduled chunks returned from the API contain id values.
+        This test *will fail* on database backends that are not supported,
+        such as sqlite.
+        """
+        self.assertEqual(
+            TaskChunkSeries.objects.count(),
+            0)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            0)
+
+        resp = self.client.post('/task/chunk/series/', {
+            'task_id': self.task.pk,
+            'duration': '2',
+            'start': '2010-05-23',
+            'end': '2010-06-23',
+            'rule': 'interval',
+            'interval_days': 1,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_201_CREATED)
+
+        self.assertSetEqual(
+            set(resp.data.keys()),
+            {'series', 'scheduled'})
+
+        self.assertEqual(
+            len(resp.data['scheduled']),
+            32)
+
+        for scheduled in resp.data['scheduled']:
+            self.assertIsNotNone(scheduled['id'])
+            self.assertIsInstance(scheduled['id'], int)
+
+    @freeze_time('2010-05-03')
     def test_create(self):
         """
         Test the creation of a series, making sure that initial
