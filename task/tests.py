@@ -1313,6 +1313,72 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             task_chunk2.day_order,
             2)
 
+    def test_exchange_task_chunk_different_day(self):
+        """Test exchanging a task chunk with another."""
+        task_chunk1 = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day,
+            duration=Decimal(1),
+            day_order=1
+        )
+        task_chunk2 = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day,
+            duration=Decimal(1),
+            day_order=2
+        )
+        task_chunk3 = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day,
+            duration=Decimal(1),
+            day_order=3
+        )
+        task_chunk4 = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day,
+            duration=Decimal(1),
+            day_order=4
+        )
+        task_chunk5 = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day2,
+            duration=Decimal(1),
+            day_order=1
+        )
+
+        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk5.pk), {
+            'day_order': 3,
+            'day': self.day,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+
+        task_chunk5.refresh_from_db()
+        self.assertEqual(
+            task_chunk5.day,
+            self.day)
+        self.assertEqual(
+            task_chunk5.day_order,
+            5)
+
+        task_chunk1.refresh_from_db()
+        self.assertEqual(
+            task_chunk1.day_order,
+            1)
+        task_chunk2.refresh_from_db()
+        self.assertEqual(
+            task_chunk2.day_order,
+            2)
+        task_chunk3.refresh_from_db()
+        self.assertEqual(
+            task_chunk3.day_order,
+            3)
+        task_chunk4.refresh_from_db()
+        self.assertEqual(
+            task_chunk4.day_order,
+            4)
+
     def test_task_chunk_change_day(self):
         """
         Test changing the day of a task chunk. The submitted
