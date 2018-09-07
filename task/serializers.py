@@ -30,6 +30,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'start',
             'deadline',
             'labels',
+            'notes',
             'scheduled_duration',
             'finished_duration',
         )
@@ -141,6 +142,7 @@ class TaskChunkSerializer(serializers.ModelSerializer):
             'day_order',
             'duration',
             'finished',
+            'notes',
         )
     series = serializers.PrimaryKeyRelatedField(read_only=True)
     day = DayOrScheduleField()

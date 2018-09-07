@@ -73,6 +73,8 @@ class Task(models.Model):
 
     labels = models.ManyToManyField('label.Label', related_name='tasks')
 
+    notes = models.TextField(null=True)
+
     objects = TaskManager()
 
     def __str__(self) -> str:
@@ -388,6 +390,8 @@ class TaskChunk(models.Model):
             MinValueValidator(Decimal('0.01')),
         ))
     finished = models.BooleanField(default=False)
+
+    notes = models.TextField(null=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
