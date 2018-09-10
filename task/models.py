@@ -56,7 +56,7 @@ class Task(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tasks')
     name = models.CharField(max_length=40)
     duration = models.DecimalField(
-        max_digits=5, decimal_places=2, default=1,
+        max_digits=8, decimal_places=2, default=1,
         validators=(
             MinValueValidator(Decimal('0.01')),
         ))
