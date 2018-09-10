@@ -287,8 +287,8 @@ class TaskChunkSeries(models.Model):
         """
         if last and last < self.start:
             # if the start date is modified after chunks are scheduled
-            # already, prevent from scheduling any more chunks in the
-            # past
+            # already, prevent from scheduling any more chunks before the
+            # start date
             last = None
 
         apply = getattr(self, '_apply_{}'.format(self.rule), None)
@@ -315,7 +315,10 @@ class TaskChunkSeries(models.Model):
             day = self.monthly_day
 
         if not last:
-            return self._replace_day(self.start, day)
+            next = self._replace_day(self.start, day)
+            if next < self.start:
+                next = self._add_months(next, 1)
+            return next
 
         next = self._add_months(last, self.monthly_months)
         return self._replace_day(next, day)

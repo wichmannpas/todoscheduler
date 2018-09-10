@@ -3085,6 +3085,33 @@ class TaskChunkSeriesTest(TestCase):
             series.apply_rule(date(2010, 5, 16)),
             date(2010, 6, 26))
 
+    @freeze_time('2010-02-24')
+    def test_apply_rule_monthlyweekday_start_before_first_potential_schedule(self):
+        """
+        Test applying the monthlyweekday rule if the instance of
+        the start month would be before the actual start date.
+        """
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 1, 28),
+            rule='monthlyweekday',
+            monthly_months=1,
+            monthlyweekday_weekday=1,
+            monthlyweekday_nth=1)
+
+        # interval without previous occurrence schedules for month of start
+        self.assertEqual(
+            series.apply_rule(),
+            date(2010, 2, 2))
+
+        self.assertEqual(
+            series.apply_rule(series.start),
+            date(2010, 2, 2))
+
+        self.assertEqual(
+            series.apply_rule(date(2010, 2, 5)),
+            date(2010, 3, 2))
+
     def test_schedule_limit_count(self):
         series = TaskChunkSeries.objects.create(
             task=self.task,
