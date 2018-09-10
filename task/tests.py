@@ -3759,6 +3759,57 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
             TaskChunk.objects.count(),
             32)
 
+    @freeze_time('2010-05-03')
+    def test_create_scheduled_task_duration(self):
+        """
+        Test the creation of a series, making sure that initial
+        task chunks are scheduled and returned.
+        """
+        self.assertEqual(
+            TaskChunkSeries.objects.count(),
+            0)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            0)
+
+        initial_task_duration = self.task.duration
+        initial_task_scheduled_duration = self.task.scheduled_duration
+
+        resp = self.client.post('/task/chunk/series/', {
+            'task_id': self.task.pk,
+            'duration': '2',
+            'start': '2010-05-23',
+            'end': '2010-06-23',
+            'rule': 'interval',
+            'interval_days': 1,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_201_CREATED)
+
+        self.assertSetEqual(
+            set(resp.data.keys()),
+            {'series', 'scheduled'})
+
+        self.assertEqual(
+            len(resp.data['scheduled']),
+            32)
+
+        self.task.refresh_from_db()
+        self.assertNotEqual(
+            self.task.duration,
+            initial_task_duration)
+        self.assertNotEqual(
+            self.task.scheduled_duration,
+            initial_task_scheduled_duration)
+        for scheduled in resp.data['scheduled']:
+            self.assertEqual(
+                Decimal(scheduled['task']['duration']),
+                self.task.duration)
+            self.assertEqual(
+                Decimal(scheduled['task']['scheduled_duration']),
+                self.task.scheduled_duration)
+
     def test_partial_update(self):
         """
         Test that it is not allowed to partially update a task chunk series.
