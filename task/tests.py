@@ -3282,6 +3282,7 @@ class TaskChunkSeriesSerializerTest(TestCase):
             'request': self.request,
         }
 
+    @freeze_time('2010-05-03')
     def test_validation_invalid_rule(self):
         serializer = TaskChunkSeriesSerializer(data={
             'task_id': self.task.pk,
@@ -3294,6 +3295,7 @@ class TaskChunkSeriesSerializerTest(TestCase):
             set(serializer.errors.keys()),
             {'rule'})
 
+    @freeze_time('2010-05-03')
     def test_validation_interval(self):
         serializer = TaskChunkSeriesSerializer(data={
             'task_id': self.task.pk,
@@ -3339,6 +3341,7 @@ class TaskChunkSeriesSerializerTest(TestCase):
         self.assertTrue(
             serializer.is_valid())
 
+    @freeze_time('2010-05-03')
     def test_validation_monthly(self):
         serializer = TaskChunkSeriesSerializer(data={
             'task_id': self.task.pk,
@@ -3402,6 +3405,7 @@ class TaskChunkSeriesSerializerTest(TestCase):
         self.assertTrue(
             serializer.is_valid())
 
+    @freeze_time('2008-01-03')
     def test_validation_monthly_last_day_of_month(self):
         serializer = TaskChunkSeriesSerializer(data={
             'task_id': self.task.pk,
@@ -3457,6 +3461,7 @@ class TaskChunkSeriesSerializerTest(TestCase):
             set(serializer.errors.keys()),
             {'monthly_day'})
 
+    @freeze_time('2010-05-03')
     def test_validation_monthlyweekday(self):
         serializer = TaskChunkSeriesSerializer(data={
             'task_id': self.task.pk,
@@ -3635,6 +3640,23 @@ class TaskChunkSeriesSerializerTest(TestCase):
             instance.end,
             date(2010, 5, 1))
 
+    @freeze_time('2010-01-03')
+    def test_validation_create_start_past(self):
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-01-01',  # in past
+            'rule': 'interval',
+            'interval_days': 10,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {
+                'start',
+            })
+
+    @freeze_time('2010-01-03')
     def test_validation_create_start_after_end(self):
         serializer = TaskChunkSeriesSerializer(data={
             'task_id': self.task.pk,
