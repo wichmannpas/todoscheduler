@@ -3608,6 +3608,46 @@ class TaskChunkSeriesSerializerTest(TestCase):
             instance.end,
             date(2010, 5, 1))
 
+    def test_validation_create_start_after_end(self):
+        serializer = TaskChunkSeriesSerializer(data={
+            'task_id': self.task.pk,
+            'start': '2010-02-24',
+            'end': '2010-01-01',
+            'rule': 'interval',
+            'interval_days': 10,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {
+                'start',
+                'end',
+            })
+
+    def test_validation_update_start_after_end(self):
+        instance = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 2, 24),
+            rule='interval',
+            interval_days=10)
+
+        serializer = TaskChunkSeriesSerializer(instance=instance, data={
+            'task_id': self.task.pk,
+            'start': '2010-02-24',
+            'end': '2010-01-01',
+            'rule': 'interval',
+            'interval_days': 10,
+        }, context=self.context)
+        self.assertFalse(
+            serializer.is_valid())
+        self.assertSetEqual(
+            set(serializer.errors.keys()),
+            {
+                'start',
+                'end',
+            })
+
 
 class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
     def setUp(self):
