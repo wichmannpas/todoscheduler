@@ -276,6 +276,11 @@ class TaskChunkSeriesSerializer(serializers.ModelSerializer):
             except ValidationError as error:
                 errors['monthly_day'].append(error)
 
+        end = data.get('end')
+        if start and end and start > end:
+            errors['start'] = 'start date may not be after the end date'
+            errors['end'] = 'end date may not be before the start date'
+
         if errors:
             raise ValidationError(errors)
 
