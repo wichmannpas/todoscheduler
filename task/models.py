@@ -73,7 +73,7 @@ class Task(models.Model):
 
     labels = models.ManyToManyField('label.Label', related_name='tasks')
 
-    notes = models.TextField(null=True)
+    notes = models.TextField(null=True, blank=True)
 
     objects = TaskManager()
 
@@ -410,7 +410,7 @@ class TaskChunk(models.Model):
         ))
     finished = models.BooleanField(default=False)
 
-    notes = models.TextField(null=True)
+    notes = models.TextField(null=True, blank=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
