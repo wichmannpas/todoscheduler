@@ -3859,6 +3859,100 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
                 Decimal(scheduled['task']['scheduled_duration']),
                 self.task.scheduled_duration)
 
+    @freeze_time('2010-05-03')
+    def test_update_cleaning(self):
+        """
+        Test the cleaning of task chunks when modifying the end date.
+        """
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 5, 3),
+            end=date(2010, 5, 24),
+            rule='interval',
+            interval_days=7)
+        series.schedule()
+
+        self.assertEqual(
+            TaskChunkSeries.objects.count(),
+            1)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            4)
+
+        resp = self.client.put('/task/chunk/series/{}/'.format(series.pk), {
+            'task_id': self.task.pk,
+            'duration': '2',
+            'start': '2010-05-03',
+            'end': '2010-05-10',
+            'rule': 'interval',
+            'interval_days': 7,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+
+        self.assertSetEqual(
+            set(resp.data.keys()),
+            {'series', 'cleaned', 'scheduled'})
+
+        self.assertEqual(
+            len(resp.data['cleaned']),
+            2)
+        self.assertEqual(
+            len(resp.data['scheduled']),
+            0)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            2)
+
+    @freeze_time('2010-05-03')
+    def test_update_scheduling(self):
+        """
+        Test the scheduling of task chunks when modifying the end date.
+        """
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 5, 3),
+            end=date(2010, 5, 24),
+            rule='interval',
+            interval_days=7)
+        series.schedule()
+
+        self.assertEqual(
+            TaskChunkSeries.objects.count(),
+            1)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            4)
+
+        resp = self.client.put('/task/chunk/series/{}/'.format(series.pk), {
+            'task_id': self.task.pk,
+            'duration': '2',
+            'start': '2010-05-03',
+            'end': '2010-06-7',
+            'rule': 'interval',
+            'interval_days': 7,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+
+        self.assertSetEqual(
+            set(resp.data.keys()),
+            {'series', 'cleaned', 'scheduled'})
+
+        self.assertEqual(
+            len(resp.data['cleaned']),
+            0)
+        self.assertEqual(
+            len(resp.data['scheduled']),
+            2)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            6)
+
     def test_partial_update(self):
         """
         Test that it is not allowed to partially update a task chunk series.

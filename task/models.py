@@ -222,6 +222,22 @@ class TaskChunkSeries(models.Model):
         return '{}: {}'.format(self.task, self.rule)
 
     @transaction.atomic
+    def clean_scheduled(self) -> List[int]:
+        """
+        Clean all scheduled chunks which are no longer valid.
+        Returns the ids of all chunks that were deleted.
+        """
+        chunks = self.chunks.filter(day__lt=self.start)
+        if self.end:
+            chunks |= self.chunks.filter(day__gt=self.end)
+        ids = [chunk.id for chunk in chunks]
+        chunks.delete()
+
+        self.last_scheduled_day = self.chunks.aggregate(Max('day'))['day__max']
+        self.save(update_fields=('last_scheduled_day',))
+        return ids
+
+    @transaction.atomic
     def schedule(
             self,
             max_count: int = 50,
