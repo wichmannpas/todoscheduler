@@ -2,7 +2,7 @@ from django.db import transaction
 from django.db.models import F
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import MethodNotAllowed, ParseError, ValidationError
+from rest_framework.exceptions import ParseError, ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -38,7 +38,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
 
 class TaskChunkSeriesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin,
-                             mixins.RetrieveModelMixin, mixins.UpdateModelMixin):
+                             mixins.RetrieveModelMixin):
     permission_classes = IsAuthenticated,
     serializer_class = TaskChunkSeriesSerializer
 
@@ -60,8 +60,23 @@ class TaskChunkSeriesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin,
             'scheduled': scheduled_serializer.data,
         }, status=status.HTTP_201_CREATED)
 
-    def partial_update(self, request, *args, **kwargs):
-        raise MethodNotAllowed('PATCH')
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        cleaned = instance.clean_scheduled()
+
+        scheduled = instance.schedule()
+        scheduled_serializer = TaskChunkSerializer(scheduled, many=True)
+
+        return Response({
+            'series': serializer.data,
+            'scheduled': scheduled_serializer.data,
+            'cleaned': cleaned,
+        })
 
 
 class TaskChunkViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
