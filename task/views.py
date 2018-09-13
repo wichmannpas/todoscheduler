@@ -55,9 +55,12 @@ class TaskChunkSeriesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin,
         scheduled = instance.schedule()
         scheduled_serializer = TaskChunkSerializer(scheduled, many=True)
 
+        task_serializer = TaskSerializer(instance.task)
+
         return Response({
             'series': serializer.data,
             'scheduled': scheduled_serializer.data,
+            'task': task_serializer.data,
         }, status=status.HTTP_201_CREATED)
 
     @transaction.atomic
@@ -72,10 +75,13 @@ class TaskChunkSeriesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin,
         scheduled = instance.schedule()
         scheduled_serializer = TaskChunkSerializer(scheduled, many=True)
 
+        task_serializer = TaskSerializer(instance.task)
+
         return Response({
             'series': serializer.data,
             'scheduled': scheduled_serializer.data,
             'cleaned': cleaned,
+            'task': task_serializer.data,
         })
 
 

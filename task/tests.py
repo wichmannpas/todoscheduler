@@ -3735,7 +3735,7 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
 
         self.assertSetEqual(
             set(resp.data.keys()),
-            {'series', 'scheduled'})
+            {'series', 'scheduled', 'task'})
 
         self.assertEqual(
             len(resp.data['scheduled']),
@@ -3772,7 +3772,7 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
 
         self.assertSetEqual(
             set(resp.data.keys()),
-            {'series', 'scheduled'})
+            {'series', 'scheduled', 'task'})
 
         self.assertEqual(
             resp.data['series']['task_id'],
@@ -3838,7 +3838,7 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
 
         self.assertSetEqual(
             set(resp.data.keys()),
-            {'series', 'scheduled'})
+            {'series', 'scheduled', 'task'})
 
         self.assertEqual(
             len(resp.data['scheduled']),
@@ -3893,7 +3893,7 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
 
         self.assertSetEqual(
             set(resp.data.keys()),
-            {'series', 'cleaned', 'scheduled'})
+            {'series', 'cleaned', 'scheduled', 'task'})
 
         self.assertEqual(
             len(resp.data['cleaned']),
@@ -3946,7 +3946,7 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
 
         self.assertSetEqual(
             set(resp.data.keys()),
-            {'series', 'cleaned', 'scheduled'})
+            {'series', 'cleaned', 'scheduled', 'task'})
 
         self.assertEqual(
             len(resp.data['cleaned']),
