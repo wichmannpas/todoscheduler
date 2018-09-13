@@ -3522,6 +3522,7 @@ class TaskChunkSeriesSerializerTest(TestCase):
 
         serializer = TaskChunkSeriesSerializer(instance=instance, data={
             'task_id': self.task.pk,
+            'duration': 1,
             'start': '2010-02-24',
             'rule': 'interval',
             'interval_days': 7,
@@ -3624,6 +3625,7 @@ class TaskChunkSeriesSerializerTest(TestCase):
 
         serializer = TaskChunkSeriesSerializer(instance=instance, data={
             'task_id': self.task.pk,
+            'duration': 1,
             'start': '2010-02-24',
             'end': '2010-05-01',
             'rule': 'interval',
@@ -3881,7 +3883,7 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
 
         resp = self.client.put('/task/chunk/series/{}/'.format(series.pk), {
             'task_id': self.task.pk,
-            'duration': '2',
+            'duration': '1',
             'start': '2010-05-03',
             'end': '2010-05-10',
             'rule': 'interval',
@@ -3911,6 +3913,125 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
         self.assertEqual(
             self.task.duration,
             initial_task_duration - 2)
+
+    @freeze_time('2010-05-03')
+    def test_update_duration(self):
+        """
+        Test updating the duration of a task chunk series.
+        """
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 5, 3),
+            end=date(2010, 5, 24),
+            rule='interval',
+            interval_days=7)
+        series.schedule()
+
+        self.assertEqual(
+            TaskChunkSeries.objects.count(),
+            1)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            4)
+
+        resp = self.client.put('/task/chunk/series/{}/'.format(series.pk), {
+            'task_id': self.task.pk,
+            'duration': 5,
+            'start': '2010-05-03',
+            'end': '2010-05-24',
+            'rule': 'interval',
+            'interval_days': 7,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+
+        self.assertSetEqual(
+            set(resp.data.keys()),
+            {'series', 'cleaned', 'scheduled', 'task'})
+
+        self.assertEqual(
+            len(resp.data['cleaned']),
+            0)
+        self.assertEqual(
+            len(resp.data['scheduled']),
+            0)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            4)
+
+        # each chunk is increased to the new duration of 5
+        initial_task_duration = self.task.duration
+        self.task.refresh_from_db()
+        self.assertEqual(
+            self.task.duration,
+            initial_task_duration + 4 * (5 - 1))
+        self.assertEqual(
+            Decimal(resp.data['task']['duration']),
+            initial_task_duration + 4 * (5 - 1))
+
+    @freeze_time('2010-05-03')
+    def test_update_duration_modified(self):
+        """
+        Test updating the duration of a task chunk series when the duration
+        of a task chunk was already modified.
+        """
+        series = TaskChunkSeries.objects.create(
+            task=self.task,
+            start=date(2010, 5, 3),
+            end=date(2010, 5, 24),
+            rule='interval',
+            interval_days=7)
+        series.schedule()
+
+        self.assertEqual(
+            TaskChunkSeries.objects.count(),
+            1)
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            4)
+
+        chunk = TaskChunk.objects.last()
+        chunk.duration = 3
+        chunk.save()
+
+        resp = self.client.put('/task/chunk/series/{}/'.format(series.pk), {
+            'task_id': self.task.pk,
+            'duration': 5,
+            'start': '2010-05-03',
+            'end': '2010-05-24',
+            'rule': 'interval',
+            'interval_days': 7,
+        })
+        self.assertEqual(
+            resp.status_code,
+            status.HTTP_200_OK)
+
+        self.assertSetEqual(
+            set(resp.data.keys()),
+            {'series', 'cleaned', 'scheduled', 'task'})
+
+        self.assertEqual(
+            len(resp.data['cleaned']),
+            0)
+        self.assertEqual(
+            len(resp.data['scheduled']),
+            0)
+
+        self.assertEqual(
+            TaskChunk.objects.count(),
+            4)
+
+        # each chunk except for the modified one is increased to the new duration of 5
+        initial_task_duration = self.task.duration
+        self.task.refresh_from_db()
+        self.assertEqual(
+            self.task.duration,
+            initial_task_duration + 3 * (5 - 1))
+        self.assertEqual(
+            Decimal(resp.data['task']['duration']),
+            initial_task_duration + 3 * (5 - 1))
 
     @freeze_time('2010-05-03')
     def test_update_scheduling(self):
