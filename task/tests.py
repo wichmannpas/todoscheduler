@@ -3906,6 +3906,12 @@ class TaskChunkSeriesViewSetTest(AuthenticatedApiTest):
             TaskChunk.objects.count(),
             2)
 
+        initial_task_duration = self.task.duration
+        self.task.refresh_from_db()
+        self.assertEqual(
+            self.task.duration,
+            initial_task_duration - 2)
+
     @freeze_time('2010-05-03')
     def test_update_scheduling(self):
         """
