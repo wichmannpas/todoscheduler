@@ -5,6 +5,7 @@ from typing import DefaultDict, List
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.db.models import F
 from rest_framework import serializers
 from rest_framework.exceptions import ErrorDetail, ValidationError
 
@@ -288,6 +289,20 @@ class TaskChunkSeriesSerializer(serializers.ModelSerializer):
             raise ValidationError(errors)
 
         return data
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        if validated_data['duration'] != instance.duration:
+            # duration changed, update chunks duration
+            updated = instance.chunks.filter(duration=instance.duration).update(
+                duration=validated_data['duration'])
+            additional_duration = updated * (validated_data['duration'] - instance.duration)
+            instance.task.duration = F('duration') + additional_duration
+            instance.task.save(update_fields=('duration',))
+            # refresh the task from the db to get the actual duration value
+            instance.task.refresh_from_db()
+
+        return super().update(instance, validated_data)
 
     def _update_errors(
             self, data: dict, errors: DefaultDict[str, List],
