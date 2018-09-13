@@ -231,10 +231,15 @@ class TaskChunkSeries(models.Model):
         if self.end:
             chunks |= self.chunks.filter(day__gt=self.end)
         ids = [chunk.id for chunk in chunks]
+        total_duration = sum(chunk.duration for chunk in chunks)
         chunks.delete()
 
         self.last_scheduled_day = self.chunks.aggregate(Max('day'))['day__max']
         self.save(update_fields=('last_scheduled_day',))
+
+        self.task.duration = F('duration') - total_duration
+        self.task.save(update_fields=('duration',))
+
         return ids
 
     @transaction.atomic
