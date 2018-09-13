@@ -239,6 +239,8 @@ class TaskChunkSeries(models.Model):
 
         self.task.duration = F('duration') - total_duration
         self.task.save(update_fields=('duration',))
+        # refresh the task from the db to get the actual duration value
+        self.task.refresh_from_db()
 
         return ids
 
