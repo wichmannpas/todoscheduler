@@ -1265,8 +1265,8 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             task_chunk.duration,
             Decimal(1))
 
-    def test_exchange_task_chunk(self):
-        """Test exchanging a task chunk with another."""
+    def test_move_task_chunk(self):
+        """Test moving a task chunk within a single day."""
         task_chunk1 = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
@@ -1293,8 +1293,9 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk2.refresh_from_db()
         self.assertEqual(
             task_chunk2.day_order,
-            1)
+            3)
 
+        # as that day order is not yet taken, no other day orders should be changed
         resp = self.client.put('/task/chunk/{}/'.format(task_chunk1.pk), {
             'task_id': self.task.id,
             'day': '2001-02-03',
@@ -1311,10 +1312,12 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk2.refresh_from_db()
         self.assertEqual(
             task_chunk2.day_order,
-            2)
+            3)
 
-    def test_exchange_task_chunk_different_day(self):
-        """Test exchanging a task chunk with another."""
+    def test_task_chunk_change_day(self):
+        """
+        Test moving a chunk to another day without specifying a day order.
+        """
         task_chunk1 = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
@@ -1347,7 +1350,6 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         )
 
         resp = self.client.patch('/task/chunk/{}/'.format(task_chunk5.pk), {
-            'day_order': 3,
             'day': self.day,
         })
         self.assertEqual(
@@ -1379,11 +1381,10 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             task_chunk4.day_order,
             4)
 
-    def test_task_chunk_change_day(self):
+    def test_task_chunk_change_day_explicit_order(self):
         """
-        Test changing the day of a task chunk. The submitted
-        day order should be ignored and the chunk placed at the
-        end of the new day.
+        Test changing the day of a task chunk. All conflicting chunks
+        of that day should be moved down.
         """
         task_chunk1 = TaskChunk.objects.create(
             task=self.task,
@@ -1397,31 +1398,18 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             duration=Decimal(1),
             day_order=1
         )
+        task_chunk3 = TaskChunk.objects.create(
+            task=self.task,
+            day=self.day2,
+            duration=Decimal(1),
+            day_order=2
+        )
 
-        resp = self.client.patch('/task/chunk/{}/'.format(task_chunk1.pk), {
-            'day': '2001-02-04',
-        })
-        self.assertEqual(
-            resp.status_code,
-            status.HTTP_200_OK)
-        task_chunk1.refresh_from_db()
-        self.assertEqual(
-            task_chunk1.day_order,
-            2)
-        self.assertEqual(
-            task_chunk1.day,
-            self.day2)
-        task_chunk2.refresh_from_db()
-        self.assertEqual(
-            task_chunk2.day_order,
-            1)
-
-        # provided day order should be ignored
         resp = self.client.put('/task/chunk/{}/'.format(task_chunk1.pk), {
             'task_id': self.task.id,
-            'day': '2001-02-01',
+            'day': '2001-02-04',  # self.day2
             'duration': 1,
-            'day_order': 42,
+            'day_order': 1,
         })
         self.assertEqual(
             resp.status_code,
@@ -1432,12 +1420,17 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             1)
         self.assertEqual(
             task_chunk1.day,
-            date(2001, 2, 1))
+            date(2001, 2, 4))
         task_chunk2.refresh_from_db()
         self.assertEqual(
             task_chunk2.day_order,
-            1)
+            2)
+        task_chunk3.refresh_from_db()
+        self.assertEqual(
+            task_chunk3.day_order,
+            3)
 
+        # if moved to an empty day, it gets a new order automatically assigned
         resp = self.client.patch('/task/chunk/{}/'.format(task_chunk1.pk), {
             'day': '2001-02-01',
         })

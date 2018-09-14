@@ -171,23 +171,28 @@ class TaskChunkSerializer(serializers.ModelSerializer):
                 instance.task.save()
 
         new_day = validated_data.get('day')
-        if new_day and new_day != instance.day:
-            # move to another day (ignoring provided day order)
-            validated_data['day_order'] = TaskChunk.get_next_day_order(
-                instance.task.user, new_day)
-        elif 'day_order' in validated_data:
-            # exchange day order
-            day = instance.day
-            if 'day' in validated_data:
-                day = validated_data['day']
-            exchange = TaskChunk.objects.filter(
-                task__user=instance.task.user,
-                day=day,
-                day_order=validated_data['day_order'])
-            if len(exchange) == 1:
-                exchange = exchange[0]
-                exchange.day_order = instance.day_order
-                exchange.save(update_fields=('day_order',))
+        day_order = validated_data.get('day_order')
+
+        if day_order:
+            day = new_day
+            if not day:
+                day = instance.day
+
+            day_chunks = TaskChunk.objects.filter(
+                task__user=self.context['request'].user,
+                day=day)
+            if day_chunks.filter(day_order=day_order).exists():
+                # existing day order was provided, move all other chunks down
+                day_chunks.filter(
+                    day_order__gte=day_order
+                ).update(day_order=F('day_order') + 1)
+
+        if new_day and new_day != instance.day and not day_order:
+            # moved to another day without specifying new order, determine it
+            day_order = TaskChunk.get_next_day_order(instance.task.user, new_day)
+
+        if day_order:
+            validated_data['day_order'] = day_order
 
         if hasattr(instance.task, '_prefetched_objects_cache'):
             del instance.task._prefetched_objects_cache
