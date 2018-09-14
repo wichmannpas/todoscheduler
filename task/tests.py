@@ -335,7 +335,7 @@ class TaskViewSetTest(AuthenticatedApiTest):
         TaskChunk.objects.create(
             task=task,
             day=date(2000, 1, 2),
-            day_order=0,
+            day_order=1,
             duration=Decimal(1))
         resp = self.client.patch('/task/task/{}/'.format(task.pk), {
             'duration': '0.5',
@@ -360,7 +360,7 @@ class TaskViewSetTest(AuthenticatedApiTest):
         TaskChunk.objects.create(
             task=task,
             day=date(2000, 1, 2),
-            day_order=0,
+            day_order=1,
             duration=Decimal('0.5'))
         resp = self.client.patch('/task/task/{}/'.format(task.pk), {
             'duration': '0.5',
@@ -926,7 +926,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(3))
 
         resp = self.client.post('/task/chunk/{}/split/'.format(chunk.pk))
@@ -957,7 +957,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             Decimal(1))
         self.assertEqual(
             chunk.day_order,
-            0)
+            1)
 
         new_chunk = TaskChunk.objects.get(~Q(pk=chunk.pk))
         self.assertEqual(
@@ -965,14 +965,14 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             Decimal(2))
         self.assertEqual(
             new_chunk.day_order,
-            1)
+            2)
 
     def test_split_task_chunk_custom_duration(self):
         """Test splitting a task chunk."""
         chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(1))
 
         resp = self.client.post('/task/chunk/{}/split/?duration=0.3'.format(chunk.pk))
@@ -993,7 +993,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             Decimal('0.3'))
         self.assertEqual(
             chunk.day_order,
-            0)
+            1)
 
         new_chunk = TaskChunk.objects.get(~Q(pk=chunk.pk))
         self.assertEqual(
@@ -1001,14 +1001,14 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             Decimal('0.7'))
         self.assertEqual(
             new_chunk.day_order,
-            1)
+            2)
 
     def test_split_task_chunk_invalid(self):
         """Test splitting a task chunk."""
         chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(1))
 
         # no duration left for split
@@ -1052,7 +1052,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(1))
 
         self.assertEqual(
@@ -1085,7 +1085,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(1),
             finished=True)
 
@@ -1119,7 +1119,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(1))
 
         resp = self.client.delete('/task/chunk/{}/?postpone=0'.format(task_chunk.pk))
@@ -1145,7 +1145,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(2))
 
         resp = self.client.delete('/task/chunk/{}/?postpone=0'.format(task_chunk.pk))
@@ -1165,7 +1165,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(1))
 
         resp = self.client.delete('/task/chunk/{}/?postpone=1'.format(task_chunk.pk))
@@ -1189,7 +1189,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(1),
             finished=True)
 
@@ -1245,7 +1245,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         task_chunk = TaskChunk.objects.create(
             task=self.task,
             day=self.day,
-            day_order=0,
+            day_order=1,
             duration=Decimal(1),
             finished=True)
 
@@ -1452,7 +1452,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
-            'day_order': 0,
+            'day_order': 1,
             'duration': 2,
         })
         self.assertEqual(
@@ -1468,7 +1468,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             self.day)
         self.assertEqual(
             task_chunk.day_order,
-            0)
+            1)
         self.assertEqual(
             task_chunk.duration,
             Decimal(2))
@@ -1486,7 +1486,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
         resp = self.client.post('/task/chunk/', {
             'task_id': self.task.id,
             'day': '2001-02-03',
-            'day_order': 0,
+            'day_order': 1,
             'duration': 5,
         })
         self.assertEqual(
@@ -1502,7 +1502,7 @@ class TaskChunkViewSetTest(AuthenticatedApiTest):
             self.day)
         self.assertEqual(
             task_chunk.day_order,
-            0)
+            1)
         self.assertEqual(
             task_chunk.duration,
             Decimal(5))
@@ -2324,7 +2324,7 @@ class TaskTest(TestCase):
         chunk1 = TaskChunk.objects.create(
             task=task,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=4,
             finished=False)
         self.assertFalse(task.completely_scheduled)
@@ -2332,7 +2332,7 @@ class TaskTest(TestCase):
         TaskChunk.objects.create(
             task=task,
             day=self.weekdaydate1 + timedelta(days=1),
-            day_order=0,
+            day_order=1,
             duration=6,
             finished=True)
         self.assertTrue(task.completely_scheduled)
@@ -2350,7 +2350,7 @@ class TaskTest(TestCase):
         chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=4,
             finished=False)
         self.assertEqual(
@@ -2364,7 +2364,7 @@ class TaskTest(TestCase):
         chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=2,
             finished=False)
         self.assertEqual(
@@ -2389,7 +2389,7 @@ class TaskTest(TestCase):
         chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=4,
             finished=False)
         self.assertEqual(
@@ -2403,7 +2403,7 @@ class TaskTest(TestCase):
         chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=2,
             finished=False)
         self.assertEqual(
@@ -2428,7 +2428,7 @@ class TaskTest(TestCase):
         chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=4,
             finished=False)
         self.assertEqual(
@@ -2442,7 +2442,7 @@ class TaskTest(TestCase):
         chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=2,
             finished=False)
         self.assertEqual(
@@ -2467,7 +2467,7 @@ class TaskTest(TestCase):
         chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=4,
             finished=False)
         self.assertEqual(
@@ -2481,7 +2481,7 @@ class TaskTest(TestCase):
         chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=2,
             finished=False)
         self.assertEqual(
@@ -2515,7 +2515,7 @@ class TaskTest(TestCase):
         chunk1 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=1,
             finished=False)
         self.assertEqual(
@@ -2527,7 +2527,7 @@ class TaskTest(TestCase):
         chunk2 = TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=1,
             finished=False)
         self.assertEqual(
@@ -2567,7 +2567,7 @@ class TaskTest(TestCase):
         TaskChunk.objects.create(
             task=task1,
             day=self.weekdaydate1,
-            day_order=0,
+            day_order=1,
             duration=4,
             finished=False)
         self.assertIsInstance(
@@ -4147,7 +4147,7 @@ class TaskChunkTest(TestCase):
             task=task,
             day=date(2018, 12, 24),
             duration=3,
-            day_order=0)
+            day_order=1)
 
         self.assertEqual(
             TaskChunk.objects.count(),
@@ -4167,13 +4167,13 @@ class TaskChunkTest(TestCase):
 
         self.assertEqual(
             chunk.day_order,
-            0)
+            1)
         self.assertEqual(
             chunk.duration,
             Decimal(1))
         self.assertEqual(
             split_chunk.day_order,
-            1)
+            2)
         self.assertEqual(
             split_chunk.duration,
             Decimal(2))
@@ -4199,25 +4199,25 @@ class TaskChunkTest(TestCase):
             task=task2,
             day=date(2018, 12, 24),
             duration=3,
-            day_order=0)
+            day_order=1)
 
         chunk = TaskChunk.objects.create(
             task=task,
             day=date(2018, 12, 24),
             duration=3,
-            day_order=1)
+            day_order=2)
 
         chunk2 = TaskChunk.objects.create(
             task=task3,
             day=date(2018, 12, 24),
             duration=3,
-            day_order=2)
+            day_order=3)
 
         chunk3 = TaskChunk.objects.create(
             task=task3,
             day=date(2018, 12, 24),
             duration=3,
-            day_order=3)
+            day_order=4)
 
         self.assertEqual(
             TaskChunk.objects.count(),
@@ -4243,23 +4243,23 @@ class TaskChunkTest(TestCase):
 
         self.assertEqual(
             chunk0.day_order,
-            0)
+            1)
         self.assertEqual(
             chunk2.day_order,
-            3)
+            4)
         self.assertEqual(
             chunk3.day_order,
-            4)
+            5)
 
         self.assertEqual(
             chunk.day_order,
-            1)
+            2)
         self.assertEqual(
             chunk.duration,
             Decimal(1))
         self.assertEqual(
             split_chunk.day_order,
-            2)
+            3)
         self.assertEqual(
             split_chunk.duration,
             Decimal(2))

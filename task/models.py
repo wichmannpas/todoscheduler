@@ -409,7 +409,9 @@ class TaskChunk(models.Model):
         TaskChunkSeries, on_delete=models.SET_NULL, related_name='chunks',
         null=True)
     day = models.DateField()
-    day_order = models.SmallIntegerField()
+    day_order = models.SmallIntegerField(validators=(
+        MinValueValidator(1),
+    ))
     duration = models.DecimalField(
         max_digits=4, decimal_places=2, default=1,
         validators=(
