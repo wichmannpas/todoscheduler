@@ -162,37 +162,37 @@ class TaskChunkSerializer(serializers.ModelSerializer):
 
             return super().create(validated_data)
 
+    @transaction.atomic
     def update(self, instance, validated_data):
-        with transaction.atomic():
-            if 'duration' in validated_data:
-                duration_delta = validated_data['duration'] - instance.duration
-                if duration_delta:
-                    instance.task.duration += duration_delta
-                    instance.task.save()
+        if 'duration' in validated_data:
+            duration_delta = validated_data['duration'] - instance.duration
+            if duration_delta:
+                instance.task.duration += duration_delta
+                instance.task.save()
 
-            new_day = validated_data.get('day')
-            if new_day and new_day != instance.day:
-                # move to another day (ignoring provided day order)
-                validated_data['day_order'] = TaskChunk.get_next_day_order(
-                    instance.task.user, new_day)
-            elif 'day_order' in validated_data:
-                # exchange day order
-                day = instance.day
-                if 'day' in validated_data:
-                    day = validated_data['day']
-                exchange = TaskChunk.objects.filter(
-                    task__user=instance.task.user,
-                    day=day,
-                    day_order=validated_data['day_order'])
-                if len(exchange) == 1:
-                    exchange = exchange[0]
-                    exchange.day_order = instance.day_order
-                    exchange.save(update_fields=('day_order',))
+        new_day = validated_data.get('day')
+        if new_day and new_day != instance.day:
+            # move to another day (ignoring provided day order)
+            validated_data['day_order'] = TaskChunk.get_next_day_order(
+                instance.task.user, new_day)
+        elif 'day_order' in validated_data:
+            # exchange day order
+            day = instance.day
+            if 'day' in validated_data:
+                day = validated_data['day']
+            exchange = TaskChunk.objects.filter(
+                task__user=instance.task.user,
+                day=day,
+                day_order=validated_data['day_order'])
+            if len(exchange) == 1:
+                exchange = exchange[0]
+                exchange.day_order = instance.day_order
+                exchange.save(update_fields=('day_order',))
 
-            if hasattr(instance.task, '_prefetched_objects_cache'):
-                del instance.task._prefetched_objects_cache
+        if hasattr(instance.task, '_prefetched_objects_cache'):
+            del instance.task._prefetched_objects_cache
 
-            return super().update(instance, validated_data)
+        return super().update(instance, validated_data)
 
 
 class TaskChunkSeriesSerializer(serializers.ModelSerializer):
