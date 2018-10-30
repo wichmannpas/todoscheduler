@@ -14,7 +14,7 @@ class Label(models.Model):
         related_name='labels')
 
     title = models.CharField(max_length=15)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     color = models.CharField(max_length=6)
 
     def __str__(self) -> str:
