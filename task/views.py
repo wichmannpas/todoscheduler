@@ -24,7 +24,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             .annotate_finished_duration()
         return queryset.order_by(F('start').asc(nulls_first=True), 'name')
 
-    @action(['POST'], detail=True, url_path='merge/(?P<other_pk>\d+)')
+    @action(['POST'], detail=True, url_path=r'merge/(?P<other_pk>\d+)')
     def merge(self, request, pk: int, other_pk: int):
         """
         Merge another task into this task.
@@ -93,12 +93,15 @@ class TaskChunkViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin,
     serializer_class = TaskChunkSerializer
 
     def get_queryset(self):
-        return TaskChunk.objects.filter(task__user=self.request.user) \
-            .select_related(
-                'task',
-                'series',
-                'series__task'
-            ).prefetch_related('task__chunks', 'task__labels')
+        return TaskChunk.objects.filter(
+            task__user=self.request.user
+        ).select_related(
+            'task',
+            'series',
+            'series__task'
+        ).prefetch_related(
+            'task__chunks', 'task__labels'
+        )
 
     def destroy(self, request, pk=None):
         class ParameterSerializer(serializers.Serializer):
