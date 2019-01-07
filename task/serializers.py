@@ -204,17 +204,17 @@ class TaskChunkSeriesSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskChunkSeries
         fields = (
-             'id',
-             'task_id',
-             'duration',
-             'start',
-             'end',
-             'rule',
-             'interval_days',
-             'monthly_day',
-             'monthly_months',
-             'monthlyweekday_weekday',
-             'monthlyweekday_nth',
+            'id',
+            'task_id',
+            'duration',
+            'start',
+            'end',
+            'rule',
+            'interval_days',
+            'monthly_day',
+            'monthly_months',
+            'monthlyweekday_weekday',
+            'monthlyweekday_nth',
         )
 
     task_id = TaskIdRelatedField()
@@ -242,11 +242,11 @@ class TaskChunkSeriesSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         rule_fields = {
-             'interval_days',
-             'monthly_day',
-             'monthly_months',
-             'monthlyweekday_weekday',
-             'monthlyweekday_nth',
+            'interval_days',
+            'monthly_day',
+            'monthly_months',
+            'monthlyweekday_weekday',
+            'monthlyweekday_nth',
         }
         errors = defaultdict(list)
         if data['rule'] == 'interval':
