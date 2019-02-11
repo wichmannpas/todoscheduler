@@ -6,6 +6,6 @@
 #
 django-cors-headers==2.4.0
 django-rest-authtoken==1.2.2
-django==2.1.5
+django==2.1.7
 djangorestframework==3.9.0
 pytz==2018.9              # via django
