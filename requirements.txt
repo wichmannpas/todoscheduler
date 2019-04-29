@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
-django-cors-headers==2.4.0
+django-cors-headers==2.5.3
 django-rest-authtoken==1.2.2
 django==2.1.5
 djangorestframework==3.9.0
