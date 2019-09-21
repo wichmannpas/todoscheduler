@@ -369,10 +369,21 @@ class TaskChunkSeries(models.Model):
         """
         Add months to a date without changing the day.
         """
+        day_of_month = day.day
         new_month = day.month + months - 1
-        return day.replace(
-            month=(new_month % 12) + 1,
-            year=day.year + new_month // 12)
+        while True:
+            # if the target month has fewer days than the initial day, the day needs to be
+            # reduced
+            try:
+                return day.replace(
+                    day=day_of_month,
+                    month=(new_month % 12) + 1,
+                    year=day.year + new_month // 12)
+            except ValueError as e:
+                # if it fails with the 28th (for every month a valid day), something else
+                # causes the problem
+                assert day_of_month > 28, e
+                day_of_month -= 1
 
     @staticmethod
     def _advance_to_weekday(day: date, weekday: int) -> date:
