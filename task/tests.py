@@ -2735,6 +2735,18 @@ class TaskChunkSeriesTest(TestCase):
                 17),
             date(2011, 12, 15))
 
+        self.assertEqual(
+            TaskChunkSeries._add_months(
+                date(2010, 1, 31),
+                1),
+            date(2010, 2, 28))
+
+        self.assertEqual(
+            TaskChunkSeries._add_months(
+                date(2012, 1, 31),
+                1),
+            date(2012, 2, 29))
+
     def test_advance_to_weekday(self):
         self.assertEqual(
             TaskChunkSeries._advance_to_weekday(
