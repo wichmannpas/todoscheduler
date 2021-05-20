@@ -1,5 +1,5 @@
-Django<2.2
-django-cors-headers
+Django<3.3
+django-cors-headers<3.8
 django-rest-authtoken>=1
-djangorestframework
+djangorestframework<3.13
 typing; python_version <= '3.4'
