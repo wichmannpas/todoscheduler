@@ -5,7 +5,14 @@
 #    pip-compile --output-file=requirements.txt requirements.in
 #
 django-cors-headers==3.1.0
+    # via -r requirements.in
 django-rest-authtoken==1.2.2
+    # via -r requirements.in
 django==2.1.12
+    # via
+    #   -r requirements.in
+    #   django-cors-headers
 djangorestframework==3.10.3
-pytz==2019.2              # via django
+    # via -r requirements.in
+pytz==2019.2
+    # via django
