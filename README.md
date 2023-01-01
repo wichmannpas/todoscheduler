@@ -60,11 +60,6 @@ The only officially supported database backend is Postgresql.
 While most of the features work with other databases like sqlite, some do not.
 For example, the scheduling of task chunk series uses bulk creation that requires RETURNING inserts such that the ids of all objects are available from the single INSERT query.
 
-Demo
-----
-
-A hosted instance of TodoScheduler is available [here](https://todoscheduler.org).
-
 License
 -------
 
