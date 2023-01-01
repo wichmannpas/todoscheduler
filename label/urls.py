@@ -8,5 +8,5 @@ router = SimpleRouter()
 router.register(
     'label',
     views.LabelViewSet,
-    base_name='label')
+    basename='label')
 urlpatterns = router.urls

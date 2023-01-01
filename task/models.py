@@ -16,13 +16,15 @@ class TaskQuerySet(models.QuerySet):
         return self.annotate(
             finished_duration_agg=Coalesce(
                 Sum('chunks__duration', filter=Q(chunks__finished=True)),
-                0))
+                0,
+                output_field=models.DecimalField))
 
     def annotate_scheduled_duration(self):
         return self.annotate(
             scheduled_duration_agg=Coalesce(
                 Sum('chunks__duration'),
-                0))
+                0,
+                output_field=models.DecimalField))
 
     def incompletely_scheduled(self):
         """

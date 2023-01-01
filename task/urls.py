@@ -6,13 +6,13 @@ router = SimpleRouter()
 router.register(
     'task',
     views.TaskViewSet,
-    base_name='task')
+    basename='task')
 router.register(
     'chunk/series',
     views.TaskChunkSeriesViewSet,
-    base_name='taskchunkseries')
+    basename='taskchunkseries')
 router.register(
     'chunk',
     views.TaskChunkViewSet,
-    base_name='taskchunk')
+    basename='taskchunk')
 urlpatterns = router.urls
