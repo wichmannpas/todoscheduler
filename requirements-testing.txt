@@ -4,33 +4,17 @@
 #
 #    pip-compile --output-file=requirements-testing.txt requirements-testing.in requirements.in
 #
-django-cors-headers==3.1.0
-    # via -r requirements.in
-django-rest-authtoken==1.2.2
-    # via -r requirements.in
-django==2.1.12
-    # via
-    #   -r requirements.in
-    #   django-cors-headers
-djangorestframework==3.10.3
-    # via -r requirements.in
-entrypoints==0.3
-    # via flake8
-flake8==3.7.8
+flake8==6.0.0
     # via -r requirements-testing.in
-freezegun==0.3.12
+freezegun==1.2.2
     # via -r requirements-testing.in
-mccabe==0.6.1
+mccabe==0.7.0
     # via flake8
-pycodestyle==2.5.0
+pycodestyle==2.10.0
     # via flake8
-pyflakes==2.1.1
+pyflakes==3.0.1
     # via flake8
-python-dateutil==2.8.0
+python-dateutil==2.8.2
     # via freezegun
-pytz==2019.2
-    # via django
-six==1.12.0
-    # via
-    #   freezegun
-    #   python-dateutil
+six==1.16.0
+    # via python-dateutil
